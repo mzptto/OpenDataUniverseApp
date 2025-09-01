@@ -2,6 +2,9 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { JSONTree } from 'react-json-tree';
 import { ReferenceDataManager } from '../data/ReferenceDataManager';
 import ReferenceDataInfo from './ReferenceDataInfo';
+import { OSDUColors } from '../utils/osduColorUtils';
+import { SchemaUtils } from '../utils/schemaUtils';
+import { FormUtils } from '../utils/formUtils';
 
 // Reference Data Dropdown Component
 const ReferenceDataDropdown = ({ value, style }) => {
@@ -91,161 +94,14 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
     base0F: '#cc6633'
   };
 
-  const getNodeProperties = (nodeName) => {
-    if (!schema?.properties?.data?.allOf) return null;
-    
-    // Search through schema for node properties
-    for (const schemaSection of schema.properties.data.allOf) {
-      if (schemaSection.properties) {
-        for (const [key, value] of Object.entries(schemaSection.properties)) {
-          if (key === nodeName || key.includes(nodeName)) {
-            return { [key]: value };
-          }
-        }
-      }
-    }
-    return null;
-  };
 
-  const getNodeExampleData = (nodeName) => {
-    if (!example?.data) return null;
-    
-    // Search through example data for matching node
-    const searchInObject = (obj, searchKey) => {
-      for (const [key, value] of Object.entries(obj)) {
-        if (key === searchKey || key.includes(searchKey)) {
-          return { [key]: value };
-        }
-        if (typeof value === 'object' && value !== null) {
-          const found = searchInObject(value, searchKey);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-    
-    return searchInObject(example.data, nodeName);
-  };
 
-  const resolveSchemaProperties = (schemaData) => {
-    if (!schemaData) return {};
-    
-    let resolvedProperties = {};
-    
-    // Handle allOf structure
-    if (schemaData.allOf) {
-      for (const item of schemaData.allOf) {
-        if (item.properties) {
-          resolvedProperties = { ...resolvedProperties, ...item.properties };
-        }
-        // For $ref items, we'll add some common OSDU patterns
-        if (item.$ref) {
-          const refName = item.$ref.split('/').pop().replace('.json', '');
-          const commonProperties = getCommonOSDUProperties(refName);
-          resolvedProperties = { ...resolvedProperties, ...commonProperties };
-        }
-      }
-    }
-    
-    // Handle direct properties
-    if (schemaData.properties) {
-      resolvedProperties = { ...resolvedProperties, ...schemaData.properties };
-    }
-    
-    return resolvedProperties;
-  };
 
-  const getCommonOSDUProperties = (refName) => {
-    // For now, return empty object since we can't resolve $ref links
-    // In a full implementation, this would load and parse the referenced schema files
-    return {};
-  };
-
-  const formatFieldName = (fieldName) => {
-    const formatted = fieldName
-      .replace(/ID/g, '') // Remove all instances of ID
-      .replace(/Id/g, '') // Remove all instances of Id
-      .replace(/([A-Z])/g, ' $1') // Add space before capital letters
-      .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
-      .trim();
-    
-    return formatted;
-  };
-
-  // OSDU Data Model Color Utilities
-  const getDataTypeColor = (key, schemaProperty, value) => {
-    // Check if value contains OSDU patterns (most specific first)
-    if (typeof value === 'string') {
-      if (value.includes('reference-data--')) {
-        return '#79dfdf'; // reference-data (cyan)
-      }
-      if (value.includes('master-data--')) {
-        return '#ffa080'; // master-data (orange)
-      }
-      if (value.includes('work-product-component--')) {
-        return '#f9d949'; // work-product-component (yellow)
-      }
-      if (value.includes('dataset--')) {
-        return '#ddddff'; // dataset (light blue)
-      }
-    }
-    
-    // Check schema-based detection
-    if (isReferenceField(schemaProperty)) {
-      return '#79dfdf'; // reference-data
-    }
-    if (schemaProperty?.$ref || schemaProperty?.type === 'object') {
-      return '#97ccf6'; // abstract
-    }
-    if (schemaProperty?.type === 'array') {
-      return '#f1f1f1'; // nested array
-    }
-    
-    // For string/number values without OSDU patterns, use dark grey
-    if (schemaProperty?.type === 'string' || schemaProperty?.type === 'number' || schemaProperty?.type === 'integer' || 
-        (typeof value === 'string' && !schemaProperty?.type) || typeof value === 'number') {
-      return '#666666'; // dark grey
-    }
-    
-    return '#f9d949'; // work-product-component (default)
-  };
-
-  const getValueTypeColor = (value, fieldType) => {
-    if (fieldType === 'boolean') return '#ae81ff'; // purple
-    if (fieldType === 'number' || fieldType === 'integer') return '#fd971f'; // orange
-    if (fieldType === 'object') return '#66d9ef'; // blue
-    if (fieldType === 'array') return '#f4bf75'; // yellow
-    return '#a6e22e'; // green (string default)
-  };
-
-  const isReferenceField = (schemaProperty) => {
-    if (!schemaProperty) return false;
-    
-    // Check various ways a field might indicate reference data usage
-    const patterns = [
-      schemaProperty.pattern,
-      schemaProperty.$ref,
-      schemaProperty.description
-    ];
-    
-    for (const pattern of patterns) {
-      if (pattern && typeof pattern === 'string') {
-        if (pattern.includes('reference-data--') || 
-            pattern.includes('reference-data:') ||
-            pattern.toLowerCase().includes('reference')) {
-          return true;
-        }
-      }
-    }
-    
-    // Check if the field name suggests it's a reference
-    return false;
-  };
 
   const renderFormField = (key, value, schemaProperty) => {
-    const isReadOnly = key.toLowerCase().includes('time') || key.toLowerCase().includes('user') || ['id', 'kind', 'version'].includes(key);
+    const isReadOnly = FormUtils.isReadOnlyField(key);
     const fieldType = schemaProperty?.type || 'string';
-    const borderColor = getDataTypeColor(key, schemaProperty, value);
+    const borderColor = OSDUColors.getDataTypeColor(key, schemaProperty, value);
     
     const baseStyle = {
       width: '100%',
@@ -257,7 +113,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
     };
     
     // Check if this is a reference data field
-    const isReferenceDataField = (typeof value === 'string' && value.includes('reference-data--'));
+    const isReferenceDataField = FormUtils.isReferenceDataField(value);
     
     if (isReferenceDataField) {
       console.log('Reference data field detected:', key, value);
@@ -376,7 +232,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           return (
             <div key={key} style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '0.5rem', alignItems: 'center' }}>
               <label style={{ fontWeight: 'bold', color: '#2c3e50' }}>
-                {formatFieldName(key)}:
+                {FormUtils.formatFieldName(key)}:
               </label>
               {renderFormField(key, value, schemaProps?.[key]?.properties || schemaProps?.[key])}
             </div>
@@ -388,8 +244,8 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
 
   const renderContent = () => {
     if (selectedNode) {
-      const nodeProps = getNodeProperties(selectedNode);
-      const nodeExample = getNodeExampleData(selectedNode);
+      const nodeProps = SchemaUtils.getNodeProperties(schema, selectedNode);
+      const nodeExample = SchemaUtils.getNodeExampleData(example, selectedNode);
       
       return (
         <div>
@@ -475,7 +331,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
         {activeTab === 'form' && example && (() => {
           // For loaded OSDU data, use the 'data' property if it exists
           const dataToRender = example.data ? example.data : example;
-          return renderFormView(dataToRender, resolveSchemaProperties(schema?.properties?.data));
+          return renderFormView(dataToRender, SchemaUtils.resolveSchemaProperties(schema?.properties?.data));
         })()}
         
         {activeTab === 'schema' && schema && (

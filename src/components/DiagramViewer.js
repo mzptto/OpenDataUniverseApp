@@ -1,72 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Maximize2 } from 'lucide-react';
+import { PlantUMLParser } from '../utils/pumlParser';
+import { SVGUtils } from '../utils/svgUtils';
+import { EntityLabelUtils } from '../utils/entityLabelUtils';
 
 // 1 - Node selections at the top node, should display the Entity details [ALC, Legal, Version, Partition etc...]
 // 2 - Hover over node should show the entityID value recoreded there.
 // 3 - Grey out data nodes that are not filled in within the loaded json record.
 // 4 - Upgrade the interaction with properties.
 // 5 - Apply 5 buttons on the top right showing the aspects of data quality [DQ, TA, Lineage, ]
-
-// Helpers to format overlay label
-const spacify = (s) => (s ? s.replace(/(?<!^)(?=[A-Z])/g, ' ').trim() : '');
-const kebabCase = (s) => (spacify(s).toLowerCase().split(/\s+/).join('-'));
-// Heuristic: try to pull the semantic version from PUML text when not provided
-const extractVersionFromPuml = (puml, entityName) => {
-  try {
-    if (!puml) return '';
-    const semverRe = /([0-9]+\.[0-9]+\.[0-9]+)/g;
-    // Look for kind-like tokens that include the entity name and a semver at the end
-    const lines = puml.split('\n');
-    for (const line of lines) {
-      if (entityName && line.includes(entityName)) {
-        const m = [...line.matchAll(semverRe)];
-        if (m && m.length > 0) {
-          return m[m.length - 1][1];
-        }
-      }
-    }
-    // Fallback: first semver anywhere
-    const any = semverRe.exec(puml);
-    return any ? any[1] : '';
-  } catch (_) {
-    return '';
-  }
-};
-
-const deriveEntityLabel = ({ entityName, entityVersion, entityNameVersion, kind, pumlContent }) => {
-  // 1) Explicit name + version
-  if (entityName && entityVersion) {
-    const title = spacify(entityName);
-    const sub = `${kebabCase(entityName)} - v ${entityVersion}`;
-    return { title, sub };
-  }
-  // 2) Combined form: Name.1.0.1
-  const env = entityNameVersion || entityName;
-  if (typeof env === 'string') {
-    const parts = env.split('.');
-    if (parts.length >= 4) {
-      const version = parts.slice(-3).join('.');
-      const name = parts.slice(0, -3).join('.');
-      return { title: spacify(name), sub: `${kebabCase(name)} - v ${version}` };
-    }
-  }
-  // 3) Kind: osdu:wks:group--Entity:1.0.1
-  if (typeof kind === 'string' && kind.split(':').length === 4) {
-    const [, , groupEntity, version] = kind.split(':');
-    const entity = (groupEntity || '').split('--').pop() || groupEntity;
-    return { title: spacify(entity), sub: `${kebabCase(entity)} - v ${version}` };
-  }
-  // 4) Try to extract from PUML
-  const maybeVersion = extractVersionFromPuml(pumlContent || '', entityName || '');
-  if (entityName && maybeVersion) {
-    const title = spacify(entityName);
-    return { title, sub: `${kebabCase(entityName)} - v ${maybeVersion}` };
-  }
-  // Fallback
-  const title = spacify(entityName || '');
-  const sub = title ? kebabCase(title) : '';
-  return { title, sub };
-};
 
 const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, entityNameVersion, kind, onTransformChange, initialTransform, exampleData, fileName }) => {
   const containerRef = useRef(null);
@@ -104,7 +46,7 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
         const graphviz = await Graphviz.load();
         if (isCancelled) return;
         
-        const dotContent = convertPumlToDot(pumlContent);
+        const dotContent = PlantUMLParser.convertToDot(pumlContent);
         console.log('[DiagramViewer] DOT length:', dotContent.length);
         const svg = graphviz.dot(dotContent);
         
@@ -187,94 +129,12 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
             window.addEventListener('mouseup', endDrag);
             svgElement.addEventListener('wheel', onWheel, { passive: false });
 
-            // Inject styles for highlight/fade visualization (once)
-            const ensureStyles = () => {
-              if (!svgElement.querySelector('style[data-diagram-viewer]')) {
-                const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-                style.setAttribute('data-diagram-viewer', '');
-                style.textContent = `
-                  .dv-faded { opacity: 0.14 !important; }
-                  g.node.dv-highlight polygon,
-                  g.node.dv-highlight path,
-                  g.node.dv-highlight rect {
-                    stroke: #1976d2;
-                    stroke-width: 2;
-                  }
-                  g.edge.dv-highlight path {
-                    stroke: #1976d2;
-                    stroke-width: 2;
-                  }
-                  g.edge.dv-highlight polygon {
-                    fill: #1976d2;
-                    stroke: #1976d2;
-                  }
-                `;
-                svgElement.appendChild(style);
-              }
-            };
-
-            // Build adjacency from Graphviz SVG (using edge <title> like "A->B")
-            const buildAdjacency = () => {
-              const adj = new Map();
-              svgElement.querySelectorAll('g.node').forEach(n => {
-                const id = n.querySelector('title')?.textContent?.trim();
-                if (id) adj.set(id, new Set());
-              });
-              svgElement.querySelectorAll('g.edge').forEach(e => {
-                const t = e.querySelector('title')?.textContent?.trim();
-                if (!t) return;
-                const parts = t.split(/--|->/).map(s => s.trim());
-                if (parts.length === 2) {
-                  const [a, b] = parts;
-                  if (adj.has(a) && adj.has(b)) {
-                    adj.get(a).add(b);
-                    adj.get(b).add(a);
-                  }
-                }
-              });
-              return adj;
-            };
-
-            const adjacency = buildAdjacency();
-
-            const clearFocus = () => {
-              svgElement.querySelectorAll('g.node, g.edge').forEach(el => {
-                el.classList.remove('dv-highlight');
-                el.classList.remove('dv-faded');
-              });
-            };
-
-            // Analyze which fields are present in the example data
-            const analyzeDataPresence = (data) => {
-              const presentFields = new Set();
-              const traverse = (obj, path = '') => {
-                if (!obj || typeof obj !== 'object') return;
-                for (const [key, value] of Object.entries(obj)) {
-                  const fieldPath = path ? `${path}.${key}` : key;
-                  if (value !== null && value !== undefined && value !== '') {
-                    presentFields.add(key);
-                    presentFields.add(fieldPath);
-                    if (Array.isArray(value) && value.length > 0) {
-                      value.forEach((item, index) => {
-                        if (typeof item === 'object' && item !== null) {
-                          traverse(item, `${fieldPath}[${index}]`);
-                          Object.keys(item).forEach(subKey => presentFields.add(subKey));
-                        }
-                      });
-                    } else if (typeof value === 'object') {
-                      traverse(value, fieldPath);
-                    }
-                  }
-                }
-              };
-              if (data) traverse(data);
-              return presentFields;
-            };
+            const adjacency = SVGUtils.buildAdjacency(svgElement);
 
             const applyDataBasedGreying = () => {
               if (!exampleData) return;
               
-              const presentFields = analyzeDataPresence(exampleData);
+              const presentFields = SVGUtils.analyzeDataPresence(exampleData);
               const nodes = svgElement.querySelectorAll('g.node');
               const edges = svgElement.querySelectorAll('g.edge');
               
@@ -323,8 +183,8 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
             };
 
             const focusNode = (id) => {
-              ensureStyles();
-              clearFocus();
+              SVGUtils.ensureStyles(svgElement);
+              SVGUtils.clearFocus(svgElement);
               const neighborhood = new Set([id]);
               (adjacency.get(id) || new Set()).forEach(n => neighborhood.add(n));
 
@@ -367,14 +227,14 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
             // Click on background clears focus
             const onSvgClick = (e) => {
               if (e.target.closest && e.target.closest('g.node')) return; // ignore node clicks
-              clearFocus();
+              SVGUtils.clearFocus(svgElement);
               applyDataBasedGreying(); // Reapply data-based greying after clearing focus
               if (onNodeClick) onNodeClick(null);
             };
             svgElement.addEventListener('click', onSvgClick);
             
             // Apply initial data-based greying (after ensuring styles exist)
-            ensureStyles();
+            SVGUtils.ensureStyles(svgElement);
             applyDataBasedGreying();
 
             // Use saved transform or smart centering after layout
@@ -401,7 +261,9 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
                 applyTransform();
                 console.log('[DiagramViewer] Applied transform:', transformRef.current);
                 if (entityName && onTransformChange) onTransformChange(entityName, { ...transformRef.current });
-              } catch {}
+              } catch (error) {
+                console.warn('[DiagramViewer] Smart center failed:', error);
+              }
             };
 
             if (initialTransform) {
@@ -421,7 +283,9 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
                 window.removeEventListener('mouseup', endDrag);
                 svgElement.removeEventListener('wheel', onWheel);
                 svgElement.removeEventListener('click', onSvgClick);
-              } catch {}
+              } catch (error) {
+                console.warn('[DiagramViewer] Cleanup failed:', error);
+              }
             };
           }
         }, 0);
@@ -445,135 +309,7 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
     };
   }, [pumlContent, exampleData]);
 
-  const convertPumlToDot = (puml) => {
-    let dot = 'digraph Wellbore {\n';
-    dot += '    rankdir=TB;\n';
-    dot += '    node [shape=none, margin=0, fontname="Helvetica"]\n';
-    dot += '    edge [fontname="Helvetica"]\n\n';
-    
-    const lines = puml.split('\n');
-    const nodes = new Map();
-    const edges = [];
-    
-    // Consistent ID cleaning function
-    const cleanId = (name) => {
-      return name.replace(/<[^>]*>/g, '').replace(/·/g, '.').replace(/[\[\]]/g, '').trim().replace(/[^\w]/g, '_');
-    };
-    
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      
-      // Parse main class with size
-      let match = trimmed.match(/class\s+"<size:\d+>([^<]+)<\/size>"\s+as\s+([^\s]+)\s+<<([^>]+)>>/);
-      if (match) {
-        const [, displayName, id, stereotype] = match;
-        const cleanDisplayName = displayName.replace(/<[^>]*>/g, '').replace(/·/g, '.').trim();
-        const cleanId = id.replace(/·/g, '_').replace(/[^\w]/g, '_');
-        nodes.set(cleanId, { label: cleanDisplayName, stereotype, isMain: true });
-      } else {
-        // Parse regular class
-        match = trimmed.match(/class\s+"([^"]+)"\s+as\s+([^\s]+)\s+<<([^>]+)>>/);
-        if (match) {
-          const [, displayName, id, stereotype] = match;
-          const cleanDisplayName = displayName.replace(/<[^>]*>/g, '').replace(/·/g, '.').trim();
-          const cleanId = id.replace(/·/g, '_').replace(/[^\w]/g, '_');
-          nodes.set(cleanId, { label: cleanDisplayName, stereotype });
-        } else {
-          match = trimmed.match(/class\s+"([^"]+)"\s+<<([^>]+)>>/);
-          if (match) {
-            const [, displayName, stereotype] = match;
-            const cleanDisplayName = displayName.replace(/<[^>]*>/g, '').replace(/·/g, '.').trim();
-            const cleanId = displayName.replace(/[\s<>·\[\]]/g, '').replace(/[^\w]/g, '_');
-            nodes.set(cleanId, { label: cleanDisplayName, stereotype });
-          }
-        }
-      }
-      
-      // Parse abstract
-      const abstractMatch = trimmed.match(/abstract\s+"([^"]+)"\s+<<([^>]+)>>/);
-      if (abstractMatch) {
-        const [, displayName, stereotype] = abstractMatch;
-        const cleanDisplayName = displayName.replace(/·/g, '.').trim();
-        const id = displayName.replace(/[\s\[\]·]/g, '').replace(/[^\w]/g, '_');
-        nodes.set(id, { label: cleanDisplayName, stereotype });
-      }
-      
-      // Parse relationships with labels like: "GeoContexts[]" --> "1" "Basin" : "BasinID"
-      let relMatch = trimmed.match(/"([^"]+)"\s*(\*--|-->|->|\|>|-\|>|-right-\|>)\s*"([^"]+)"\s*"([^"]+)"\s*:\s*"([^"]+)"/);
-      if (relMatch) {
-        const [, from, arrow, , to, label] = relMatch;
-        const fromId = cleanId(from);
-        const toId = cleanId(to);
-        const type = arrow === '*--' ? 'composition' : 'regular';
-        edges.push({ from: fromId, to: toId, type, label });
-      } else {
-        // Parse relationships without multiplicity like: "Wellbore" --> "1" "Organisation"
-        relMatch = trimmed.match(/"([^"]+)"\s*(\*--|-->|->|\|>|-\|>|-right-\|>)\s*"([^"]+)"\s*"([^"]+)"/);
-        if (relMatch) {
-          const [, from, arrow, , to] = relMatch;
-          const fromId = cleanId(from);
-          const toId = cleanId(to);
-          const type = arrow === '*--' ? 'composition' : 'regular';
-          edges.push({ from: fromId, to: toId, type });
-        } else {
-          // Parse inheritance relationships like: "FileCollection·SEGY" -right-|> "AbstractCommonResources"
-          relMatch = trimmed.match(/"([^"]+)"\s*(-right-\|>|-\|>|\|>)\s*"([^"]+)"/);
-          if (relMatch) {
-            const [, from, arrow, to] = relMatch;
-            const fromId = cleanId(from);
-            const toId = cleanId(to);
-            edges.push({ from: fromId, to: toId, type: 'inheritance' });
-          }
-        }
-      }
-    });
-    
-    // Add nodes
-    for (const [id, node] of nodes) {
-      const color = getColorForStereotype(node.stereotype);
-      const fontSize = node.isMain ? '36' : '12';
-      
-      dot += `    ${id} [label=<<table border="0" cellborder="1" cellspacing="0">\n`;
-      if (node.isMain) {
-        dot += `        <tr><td port="f0" bgcolor="${color}"><font point-size="${fontSize}">${node.label}</font></td></tr>\n`;
-      } else {
-        dot += `        <tr><td bgcolor="${color}">${node.label}</td></tr>\n`;
-      }
-      dot += `        <tr><td bgcolor="${color}"><i>«${node.stereotype}»</i></td></tr>\n`;
-      dot += `    </table>>]\n\n`;
-    }
-    
-    // Add edges
-    for (const edge of edges) {
-      if (edge.type === 'composition') {
-        dot += `    ${edge.from} -> ${edge.to} [dir=both, arrowhead=none, arrowtail=diamond];\n`;
-      } else {
-        dot += `    ${edge.from} -> ${edge.to}`;
-        if (edge.label) {
-          dot += ` [label="${edge.label}"]`;
-        }
-        dot += `;\n`;
-      }
-    }
-    
-    dot += '}\n';
-    return dot;
-  };
 
-  const getColorForStereotype = (stereotype) => {
-    const colors = {
-      'master-data': '#ffa080',
-      'work-product-component': '#f9d949',
-      'abstract': '#97ccf6',
-      'dataset': '#ddddff',
-      'reference-data': '#79dfdf',
-      'any-group-type': '#ddffee',
-      'Abstraction': '#97ccf6',
-      'nested array': '#f1f1f1',
-      'nested': '#f1f1f1'
-    };
-    return colors[stereotype] || '#ffffff';
-  };
 
   const handleCenter = () => {
     transformRef.current = { scale: 1, translateX: 0, translateY: 0 };
@@ -595,7 +331,7 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
     if (entityName && onTransformChange) onTransformChange(entityName, { ...transformRef.current });
   };
 
-  const { title, sub } = deriveEntityLabel({ entityName, entityVersion, entityNameVersion, kind, pumlContent });
+  const { title, sub } = EntityLabelUtils.deriveEntityLabel({ entityName, entityVersion, entityNameVersion, kind, pumlContent });
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
