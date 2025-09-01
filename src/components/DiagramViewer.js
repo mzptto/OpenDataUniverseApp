@@ -1,6 +1,67 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const DiagramViewer = ({ pumlContent, onNodeClick, entityName, onTransformChange, initialTransform }) => {
+// Helpers to format overlay label
+const spacify = (s) => (s ? s.replace(/(?<!^)(?=[A-Z])/g, ' ').trim() : '');
+const kebabCase = (s) => (spacify(s).toLowerCase().split(/\s+/).join('-'));
+// Heuristic: try to pull the semantic version from PUML text when not provided
+const extractVersionFromPuml = (puml, entityName) => {
+  try {
+    if (!puml) return '';
+    const semverRe = /([0-9]+\.[0-9]+\.[0-9]+)/g;
+    // Look for kind-like tokens that include the entity name and a semver at the end
+    const lines = puml.split('\n');
+    for (const line of lines) {
+      if (entityName && line.includes(entityName)) {
+        const m = [...line.matchAll(semverRe)];
+        if (m && m.length > 0) {
+          return m[m.length - 1][1];
+        }
+      }
+    }
+    // Fallback: first semver anywhere
+    const any = semverRe.exec(puml);
+    return any ? any[1] : '';
+  } catch (_) {
+    return '';
+  }
+};
+
+const deriveEntityLabel = ({ entityName, entityVersion, entityNameVersion, kind, pumlContent }) => {
+  // 1) Explicit name + version
+  if (entityName && entityVersion) {
+    const title = spacify(entityName);
+    const sub = `${kebabCase(entityName)} - v ${entityVersion}`;
+    return { title, sub };
+  }
+  // 2) Combined form: Name.1.0.1
+  const env = entityNameVersion || entityName;
+  if (typeof env === 'string') {
+    const parts = env.split('.');
+    if (parts.length >= 4) {
+      const version = parts.slice(-3).join('.');
+      const name = parts.slice(0, -3).join('.');
+      return { title: spacify(name), sub: `${kebabCase(name)} - v ${version}` };
+    }
+  }
+  // 3) Kind: osdu:wks:group--Entity:1.0.1
+  if (typeof kind === 'string' && kind.split(':').length === 4) {
+    const [, , groupEntity, version] = kind.split(':');
+    const entity = (groupEntity || '').split('--').pop() || groupEntity;
+    return { title: spacify(entity), sub: `${kebabCase(entity)} - v ${version}` };
+  }
+  // 4) Try to extract from PUML
+  const maybeVersion = extractVersionFromPuml(pumlContent || '', entityName || '');
+  if (entityName && maybeVersion) {
+    const title = spacify(entityName);
+    return { title, sub: `${kebabCase(entityName)} - v ${maybeVersion}` };
+  }
+  // Fallback
+  const title = spacify(entityName || '');
+  const sub = title ? kebabCase(title) : '';
+  return { title, sub };
+};
+
+const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, entityNameVersion, kind, onTransformChange, initialTransform }) => {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const transformRef = useRef({ scale: 1, translateX: 0, translateY: 0 });
@@ -444,8 +505,26 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, onTransformChange
     if (entityName && onTransformChange) onTransformChange(entityName, { ...transformRef.current });
   };
 
+  const { title, sub } = deriveEntityLabel({ entityName, entityVersion, entityNameVersion, kind, pumlContent });
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+      {(title || sub) && (
+        <div style={{
+          position: 'absolute',
+          top: 8,
+          left: 8,
+          zIndex: 1000,
+          pointerEvents: 'none',
+          background: 'rgba(255,255,255,0.85)',
+          borderRadius: 6,
+          padding: '6px 10px',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
+        }}>
+          {title && (<div style={{ fontWeight: 600, lineHeight: 1.1 }}>{title}</div>)}
+          {sub && (<div style={{ color: '#6B7280', fontSize: 12, marginTop: 2, lineHeight: 1.1 }}>{sub}</div>)}
+        </div>
+      )}
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       {loading && (
         <div style={{

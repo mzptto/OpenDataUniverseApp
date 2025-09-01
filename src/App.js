@@ -292,6 +292,8 @@ function App() {
               pumlContent={appState.selectedEntity?.pumlContent}
               onNodeClick={handleNodeClick}
               entityName={appState.selectedEntity?.name}
+              entityVersion={appState.selectedEntity?.version}
+              kind={(appState.selectedEntity?.schema?.kind) || (appState.selectedEntity?.example?.kind)}
               onTransformChange={handleTransformChange}
               initialTransform={getCurrentTransform()}
             />
