@@ -1,7 +1,68 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { JSONTree } from 'react-json-tree';
 import { ReferenceDataManager } from '../data/ReferenceDataManager';
 import ReferenceDataInfo from './ReferenceDataInfo';
+
+// Reference Data Dropdown Component
+const ReferenceDataDropdown = ({ value, style }) => {
+  const [options, setOptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        // Extract reference type directly from the value
+        if (typeof value === 'string' && value.includes('reference-data--')) {
+          const match = value.match(/reference-data--([^:]+)/);
+          if (match) {
+            const refType = match[1];
+            console.log('Loading reference data for type:', refType);
+            const referenceValues = await ReferenceDataManager.getReferenceValues(refType);
+            console.log('Loaded options:', referenceValues?.length || 0);
+            setOptions(referenceValues || []);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load reference data:', error);
+        setOptions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadOptions();
+  }, [value]);
+
+  if (loading) {
+    return (
+      <select disabled style={style}>
+        <option>Loading...</option>
+      </select>
+    );
+  }
+
+  if (options.length === 0) {
+    return (
+      <input
+        type="text"
+        value={value || ''}
+        readOnly
+        style={style}
+      />
+    );
+  }
+
+  return (
+    <select value={value || ''} onChange={() => {}} style={style}>
+      <option value="">{value ? value : 'Select...'}</option>
+      {options.map((option) => (
+        <option key={option.id} value={option.id}>
+          {option.name} ({option.code})
+        </option>
+      ))}
+    </select>
+  );
+};
 
 const PropertiesPanel = ({ schema, example, selectedNode }) => {
   const [activeTab, setActiveTab] = useState('form');
@@ -101,8 +162,6 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
   };
 
   const formatFieldName = (fieldName) => {
-    console.log('Formatting field name:', fieldName);
-    
     const formatted = fieldName
       .replace(/ID/g, '') // Remove all instances of ID
       .replace(/Id/g, '') // Remove all instances of Id
@@ -110,8 +169,53 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
       .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
       .trim();
     
-    console.log('Formatted result:', formatted);
     return formatted;
+  };
+
+  // OSDU Data Model Color Utilities
+  const getDataTypeColor = (key, schemaProperty, value) => {
+    // Check if value contains OSDU patterns (most specific first)
+    if (typeof value === 'string') {
+      if (value.includes('reference-data--')) {
+        return '#79dfdf'; // reference-data (cyan)
+      }
+      if (value.includes('master-data--')) {
+        return '#ffa080'; // master-data (orange)
+      }
+      if (value.includes('work-product-component--')) {
+        return '#f9d949'; // work-product-component (yellow)
+      }
+      if (value.includes('dataset--')) {
+        return '#ddddff'; // dataset (light blue)
+      }
+    }
+    
+    // Check schema-based detection
+    if (isReferenceField(schemaProperty)) {
+      return '#79dfdf'; // reference-data
+    }
+    if (schemaProperty?.$ref || schemaProperty?.type === 'object') {
+      return '#97ccf6'; // abstract
+    }
+    if (schemaProperty?.type === 'array') {
+      return '#f1f1f1'; // nested array
+    }
+    
+    // For string/number values without OSDU patterns, use dark grey
+    if (schemaProperty?.type === 'string' || schemaProperty?.type === 'number' || schemaProperty?.type === 'integer' || 
+        (typeof value === 'string' && !schemaProperty?.type) || typeof value === 'number') {
+      return '#666666'; // dark grey
+    }
+    
+    return '#f9d949'; // work-product-component (default)
+  };
+
+  const getValueTypeColor = (value, fieldType) => {
+    if (fieldType === 'boolean') return '#ae81ff'; // purple
+    if (fieldType === 'number' || fieldType === 'integer') return '#fd971f'; // orange
+    if (fieldType === 'object') return '#66d9ef'; // blue
+    if (fieldType === 'array') return '#f4bf75'; // yellow
+    return '#a6e22e'; // green (string default)
   };
 
   const isReferenceField = (schemaProperty) => {
@@ -141,8 +245,23 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
   const renderFormField = (key, value, schemaProperty) => {
     const isReadOnly = key.toLowerCase().includes('time') || key.toLowerCase().includes('user') || ['id', 'kind', 'version'].includes(key);
     const fieldType = schemaProperty?.type || 'string';
+    const borderColor = getDataTypeColor(key, schemaProperty, value);
     
-
+    const baseStyle = {
+      width: '100%',
+      padding: '0.5rem',
+      border: `3px solid ${borderColor}`,
+      borderRadius: '4px',
+      backgroundColor: '#ffffff',
+      fontWeight: '500'
+    };
+    
+    // Check if this is a reference data field
+    const isReferenceDataField = (typeof value === 'string' && value.includes('reference-data--'));
+    
+    if (isReferenceDataField) {
+      console.log('Reference data field detected:', key, value);
+    }
     
     if (isReadOnly) {
       return (
@@ -151,29 +270,19 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           value={value || ''}
           disabled
           style={{
-            width: '100%',
-            padding: '0.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            background: '#f5f5f5',
-            color: '#666'
+            ...baseStyle,
+            opacity: 0.7
           }}
         />
       );
     }
 
-    
     if (fieldType === 'boolean') {
       return (
         <select
           value={value?.toString() || 'false'}
           disabled
-          style={{
-            width: '100%',
-            padding: '0.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '4px'
-          }}
+          style={baseStyle}
         >
           <option value="true">True</option>
           <option value="false">False</option>
@@ -187,14 +296,17 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           type="number"
           value={value || ''}
           readOnly
-          style={{
-            width: '100%',
-            padding: '0.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '4px'
-          }}
+          style={baseStyle}
         />
       );
+    }
+    
+    // Render reference data dropdown
+    if (isReferenceDataField) {
+      return <ReferenceDataDropdown 
+        value={value} 
+        style={baseStyle} 
+      />;
     }
     
     return (
@@ -202,12 +314,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
         type="text"
         value={value || ''}
         readOnly
-        style={{
-          width: '100%',
-          padding: '0.5rem',
-          border: '1px solid #ddd',
-          borderRadius: '4px'
-        }}
+        style={baseStyle}
       />
     );
   };
@@ -220,7 +327,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
         {Object.entries(data).map(([key, value]) => {
           if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
             return (
-              <div key={key} style={{ border: '1px solid #eee', padding: '1rem', borderRadius: '4px' }}>
+              <div key={key} style={{ border: '2px solid #ccc', padding: '1rem', borderRadius: '6px', backgroundColor: '#f8f9fa' }}>
                 <h5 style={{ margin: '0 0 0.5rem 0', color: '#2c3e50' }}>{key}</h5>
                 {renderFormView(value, schemaProps?.[key])}
               </div>
@@ -229,22 +336,23 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           
           if (Array.isArray(value)) {
             return (
-              <div key={key} style={{ border: '1px solid #eee', padding: '1rem', borderRadius: '4px' }}>
+              <div key={key} style={{ border: '2px solid #ccc', padding: '1rem', borderRadius: '6px', backgroundColor: '#f8f9fa' }}>
                 <h5 style={{ margin: '0 0 1rem 0', color: '#2c3e50' }}>{key} ({value.length} items)</h5>
                 {value.map((item, index) => (
                   <div key={index} style={{ 
-                    border: '1px solid #ddd', 
+                    border: '2px solid #bbb', 
                     padding: '1rem', 
                     marginBottom: '1rem', 
-                    borderRadius: '4px',
-                    backgroundColor: '#f9f9f9'
+                    borderRadius: '6px',
+                    backgroundColor: '#ffffff'
                   }}>
                     <h6 style={{ margin: '0 0 0.5rem 0', color: '#34495e' }}>
                       {key.slice(0, -1)} {index + 1}
                     </h6>
-                    {typeof item === 'object' && item !== null ? 
-                      renderFormView(item, schemaProps?.[key]?.items?.properties) :
-                      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '0.5rem', alignItems: 'center' }}>
+                    {typeof item === 'object' && item !== null ? (
+                      renderFormView(item, schemaProps?.[key]?.items?.properties)
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '0.5rem', alignItems: 'center' }}>
                         <label style={{ fontWeight: 'bold', color: '#2c3e50' }}>Value:</label>
                         <input
                           type="text"
@@ -258,7 +366,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
                           }}
                         />
                       </div>
-                    }
+                    )}
                   </div>
                 ))}
               </div>
@@ -266,7 +374,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           }
           
           return (
-            <div key={key} style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '0.5rem', alignItems: 'center' }}>
+            <div key={key} style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '0.5rem', alignItems: 'center' }}>
               <label style={{ fontWeight: 'bold', color: '#2c3e50' }}>
                 {formatFieldName(key)}:
               </label>
@@ -318,7 +426,6 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
             >
               Schema
             </button>
-
           </div>
           
           {activeTab === 'form' && nodeExample && (
@@ -328,8 +435,6 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           {activeTab === 'schema' && nodeProps && (
             <JSONTree data={nodeProps} theme={theme} invertTheme={false} />
           )}
-          
-
         </div>
       );
     }
@@ -365,7 +470,6 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           >
             Schema
           </button>
-
         </div>
         
         {activeTab === 'form' && example && (() => {
@@ -377,8 +481,6 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
         {activeTab === 'schema' && schema && (
           <JSONTree data={schema} theme={theme} invertTheme={false} />
         )}
-        
-
       </div>
     );
   };

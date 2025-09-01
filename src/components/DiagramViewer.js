@@ -5,6 +5,7 @@ import { Maximize2 } from 'lucide-react';
 // 2 - Hover over node should show the entityID value recoreded there.
 // 3 - Grey out data nodes that are not filled in within the loaded json record.
 // 4 - Upgrade the interaction with properties.
+// 5 - Apply 5 buttons on the top right showing the aspects of data quality [DQ, TA, Lineage, ]
 
 // Helpers to format overlay label
 const spacify = (s) => (s ? s.replace(/(?<!^)(?=[A-Z])/g, ' ').trim() : '');
