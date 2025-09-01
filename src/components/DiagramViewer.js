@@ -68,7 +68,7 @@ const deriveEntityLabel = ({ entityName, entityVersion, entityNameVersion, kind,
   return { title, sub };
 };
 
-const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, entityNameVersion, kind, onTransformChange, initialTransform }) => {
+const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, entityNameVersion, kind, onTransformChange, initialTransform, exampleData, fileName }) => {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const transformRef = useRef({ scale: 1, translateX: 0, translateY: 0 });
@@ -193,7 +193,7 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
                 const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
                 style.setAttribute('data-diagram-viewer', '');
                 style.textContent = `
-                  .dv-faded { opacity: 0.14; }
+                  .dv-faded { opacity: 0.14 !important; }
                   g.node.dv-highlight polygon,
                   g.node.dv-highlight path,
                   g.node.dv-highlight rect {
@@ -244,6 +244,84 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
               });
             };
 
+            // Analyze which fields are present in the example data
+            const analyzeDataPresence = (data) => {
+              const presentFields = new Set();
+              const traverse = (obj, path = '') => {
+                if (!obj || typeof obj !== 'object') return;
+                for (const [key, value] of Object.entries(obj)) {
+                  const fieldPath = path ? `${path}.${key}` : key;
+                  if (value !== null && value !== undefined && value !== '') {
+                    presentFields.add(key);
+                    presentFields.add(fieldPath);
+                    if (Array.isArray(value) && value.length > 0) {
+                      value.forEach((item, index) => {
+                        if (typeof item === 'object' && item !== null) {
+                          traverse(item, `${fieldPath}[${index}]`);
+                          Object.keys(item).forEach(subKey => presentFields.add(subKey));
+                        }
+                      });
+                    } else if (typeof value === 'object') {
+                      traverse(value, fieldPath);
+                    }
+                  }
+                }
+              };
+              if (data) traverse(data);
+              return presentFields;
+            };
+
+            const applyDataBasedGreying = () => {
+              if (!exampleData) return;
+              
+              const presentFields = analyzeDataPresence(exampleData);
+              const nodes = svgElement.querySelectorAll('g.node');
+              const edges = svgElement.querySelectorAll('g.edge');
+              
+              // Track which nodes are active
+              const activeNodes = new Set();
+              
+              nodes.forEach((node) => {
+                const titleEl = node.querySelector('title');
+                const nodeId = titleEl?.textContent?.trim();
+                if (!nodeId) return;
+                
+                // Main node and reference data nodes are always active
+                const isMainNode = Array.from(nodes).indexOf(node) === 0;
+                const isReferenceData = nodeId === 'ReferenceDataRelationships';
+                if (isMainNode || isReferenceData) {
+                  activeNodes.add(nodeId);
+                  return;
+                }
+                
+                // Check for connection in data
+                const hasConnection = Array.from(presentFields).some(field => 
+                  field.includes(nodeId) && field.endsWith('ID')
+                );
+                
+                if (hasConnection) {
+                  activeNodes.add(nodeId);
+                } else {
+                  node.classList.add('dv-faded');
+                }
+              });
+              
+              // Fade edges that don't connect two active nodes
+              edges.forEach((edge) => {
+                const titleEl = edge.querySelector('title');
+                const edgeTitle = titleEl?.textContent?.trim();
+                if (!edgeTitle) return;
+                
+                const parts = edgeTitle.split(/--|->/).map(s => s.trim());
+                if (parts.length === 2) {
+                  const [from, to] = parts;
+                  if (!activeNodes.has(from) || !activeNodes.has(to)) {
+                    edge.classList.add('dv-faded');
+                  }
+                }
+              });
+            };
+
             const focusNode = (id) => {
               ensureStyles();
               clearFocus();
@@ -290,9 +368,14 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
             const onSvgClick = (e) => {
               if (e.target.closest && e.target.closest('g.node')) return; // ignore node clicks
               clearFocus();
+              applyDataBasedGreying(); // Reapply data-based greying after clearing focus
               if (onNodeClick) onNodeClick(null);
             };
             svgElement.addEventListener('click', onSvgClick);
+            
+            // Apply initial data-based greying (after ensuring styles exist)
+            ensureStyles();
+            applyDataBasedGreying();
 
             // Use saved transform or smart centering after layout
             const smartCenter = () => {
@@ -360,7 +443,7 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
       isCancelled = true;
       if (cleanup) cleanup();
     };
-  }, [pumlContent]);
+  }, [pumlContent, exampleData]);
 
   const convertPumlToDot = (puml) => {
     let dot = 'digraph Wellbore {\n';
@@ -528,8 +611,21 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
           padding: '6px 10px',
           boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
         }}>
-          {title && (<div style={{ fontWeight: 600, lineHeight: 1.1 }}>{title}</div>)}
-          {sub && (<div style={{ color: '#6B7280', fontSize: 12, marginTop: 2, lineHeight: 1.1 }}>{sub}</div>)}
+          {fileName ? (
+            <div>
+              <div style={{ fontWeight: 600, lineHeight: 1.1 }}>Record: {fileName}</div>
+              {kind && (
+                <div style={{ color: '#6B7280', fontSize: 12, marginTop: 2, lineHeight: 1.1 }}>
+                  Kind: {kind.split(':').slice(2).join(':')}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              {title && (<div style={{ fontWeight: 600, lineHeight: 1.1 }}>{title}</div>)}
+              {sub && (<div style={{ color: '#6B7280', fontSize: 12, marginTop: 2, lineHeight: 1.1 }}>{sub}</div>)}
+            </div>
+          )}
         </div>
       )}
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />

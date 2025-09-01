@@ -36,7 +36,7 @@ const FileSelector = ({ onFileSelect }) => {
         const entityName = extractEntityName(data, file.name);
         
         onFileSelect({
-          name: entityName,
+          name: file.name,
           schema: data,
           example: data // For now, use schema as example
         });
@@ -66,7 +66,7 @@ const FileSelector = ({ onFileSelect }) => {
             const entityName = extractEntityName(data, file.name);
             
             fileList.push({
-              name: entityName,
+              name: file.name,
               path: file.webkitRelativePath || file.name,
               schema: data,
               example: data

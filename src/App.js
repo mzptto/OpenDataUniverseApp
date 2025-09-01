@@ -141,12 +141,14 @@ function App() {
     // Use the matching entity from osduEntities with loaded data
     const entityToUse = matchingEntity ? {
       ...matchingEntity, // Keep schema, pumlContent, etc. from osduEntities
-      example: fileData.schema // Replace example with loaded data
+      example: fileData.schema, // Replace example with loaded data
+      fileName: fileData.name // Add filename
     } : {
       name: extractedEntityName,
       schema: null,
       example: fileData.schema,
-      pumlContent: null
+      pumlContent: null,
+      fileName: fileData.name
     };
 
     console.log('Selected entity set to:', {
@@ -296,6 +298,8 @@ function App() {
               kind={(appState.selectedEntity?.schema?.kind) || (appState.selectedEntity?.example?.kind)}
               onTransformChange={handleTransformChange}
               initialTransform={getCurrentTransform()}
+              exampleData={appState.selectedEntity?.example}
+              fileName={appState.selectedEntity?.fileName}
             />
           </div>
           
