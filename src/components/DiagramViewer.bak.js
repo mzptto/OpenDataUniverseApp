@@ -1,11 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Maximize2 } from 'lucide-react';
 
-// 1 - Node selections at the top node, should display the Entity details [ALC, Legal, Version, Partition etc...]
-// 2 - Hover over node should show the entityID value recoreded there.
-// 3 - Grey out data nodes that are not filled in within the loaded json record.
-// 4 - Upgrade the interaction with properties.
-
 // Helpers to format overlay label
 const spacify = (s) => (s ? s.replace(/(?<!^)(?=[A-Z])/g, ' ').trim() : '');
 const kebabCase = (s) => (spacify(s).toLowerCase().split(/\s+/).join('-'));
@@ -575,7 +570,7 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
           onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
           onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
         >
-          <Maximize2 size={20} strokeWidth={2.5} />
+          ⌂
         </button>
         <button
           onClick={handleZoomIn}
