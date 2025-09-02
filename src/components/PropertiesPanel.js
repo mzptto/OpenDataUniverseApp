@@ -266,7 +266,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
                 cursor: 'pointer'
               }}
             >
-              Form View
+              Properties
             </button>
             <button
               onClick={handleSchemaTabClick}
@@ -280,7 +280,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
                 cursor: 'pointer'
               }}
             >
-              Schema
+              Other
             </button>
           </div>
           
@@ -288,8 +288,8 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
             renderFormView(nodeExample, nodeProps)
           )}
           
-          {activeTab === 'schema' && nodeProps && (
-            <JSONTree data={nodeProps} theme={theme} invertTheme={false} />
+          {activeTab === 'schema' && (
+            <div style={{ color: '#7f8c8d' }}>Empty tab (placeholder)</div>
           )}
         </div>
       );
@@ -310,7 +310,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
               cursor: 'pointer'
             }}
           >
-            Form View
+            Properties
           </button>
           <button
             onClick={handleSchemaTabClick}
@@ -324,7 +324,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
               cursor: 'pointer'
             }}
           >
-            Schema
+            Other
           </button>
         </div>
         
@@ -334,8 +334,8 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           return renderFormView(dataToRender, SchemaUtils.resolveSchemaProperties(schema?.properties?.data));
         })()}
         
-        {activeTab === 'schema' && schema && (
-          <JSONTree data={schema} theme={theme} invertTheme={false} />
+        {activeTab === 'schema' && (
+          <div style={{ color: '#7f8c8d' }}>Empty tab (placeholder)</div>
         )}
       </div>
     );
