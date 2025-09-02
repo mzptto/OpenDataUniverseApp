@@ -1,7 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { JSONTree } from 'react-json-tree';
 import { ReferenceDataManager } from '../data/ReferenceDataManager';
-import ReferenceDataInfo from './ReferenceDataInfo';
 import { OSDUColors } from '../utils/osduColorUtils';
 import { SchemaUtils } from '../utils/schemaUtils';
 import { FormUtils } from '../utils/formUtils';
@@ -68,31 +66,13 @@ const ReferenceDataDropdown = ({ value, style }) => {
 };
 
 const PropertiesPanel = ({ schema, example, selectedNode }) => {
-  const [activeTab, setActiveTab] = useState('form');
+  const [activeTab, setActiveTab] = useState('business');
 
-  const handleFormTabClick = useCallback(() => setActiveTab('form'), []);
-  const handleSchemaTabClick = useCallback(() => setActiveTab('schema'), []);
-
-  const theme = {
-    scheme: 'monokai',
-    author: 'wimer hazenberg (http://www.monokai.nl)',
-    base00: '#272822',
-    base01: '#383830',
-    base02: '#49483e',
-    base03: '#75715e',
-    base04: '#a59f85',
-    base05: '#f8f8f2',
-    base06: '#f5f4f1',
-    base07: '#f9f8f5',
-    base08: '#f92672',
-    base09: '#fd971f',
-    base0A: '#f4bf75',
-    base0B: '#a6e22e',
-    base0C: '#a1efe4',
-    base0D: '#66d9ef',
-    base0E: '#ae81ff',
-    base0F: '#cc6633'
-  };
+  const handleRecordTabClick = useCallback(() => setActiveTab('record'), []);
+  const handleBusinessTabClick = useCallback(() => setActiveTab('business'), []);
+  const handleQualityTabClick = useCallback(() => setActiveTab('quality'), []);
+  const handleActivityTabClick = useCallback(() => setActiveTab('activity'), []);
+  const handleCollectionTabClick = useCallback(() => setActiveTab('collection'), []);
 
 
 
@@ -255,41 +235,92 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           
           <div style={{ marginBottom: '1rem' }}>
             <button
-              onClick={handleFormTabClick}
+              onClick={handleRecordTabClick}
               style={{
                 padding: '0.5rem 1rem',
                 marginRight: '0.5rem',
                 border: 'none',
-                background: activeTab === 'form' ? '#3498db' : '#ecf0f1',
-                color: activeTab === 'form' ? 'white' : '#2c3e50',
+                background: activeTab === 'record' ? '#3498db' : '#ecf0f1',
+                color: activeTab === 'record' ? 'white' : '#2c3e50',
                 borderRadius: '4px',
                 cursor: 'pointer'
               }}
             >
-              Properties
+              Record Infromation
             </button>
             <button
-              onClick={handleSchemaTabClick}
+              onClick={handleBusinessTabClick}
               style={{
                 padding: '0.5rem 1rem',
                 marginRight: '0.5rem',
                 border: 'none',
-                background: activeTab === 'schema' ? '#3498db' : '#ecf0f1',
-                color: activeTab === 'schema' ? 'white' : '#2c3e50',
+                background: activeTab === 'business' ? '#3498db' : '#ecf0f1',
+                color: activeTab === 'business' ? 'white' : '#2c3e50',
                 borderRadius: '4px',
                 cursor: 'pointer'
               }}
             >
-              Other
+              Business Data
+            </button>
+            <button
+              onClick={handleQualityTabClick}
+              style={{
+                padding: '0.5rem 1rem',
+                marginRight: '0.5rem',
+                border: 'none',
+                background: activeTab === 'quality' ? '#3498db' : '#ecf0f1',
+                color: activeTab === 'quality' ? 'white' : '#2c3e50',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Data Quality
+            </button>
+            <button
+              onClick={handleActivityTabClick}
+              style={{
+                padding: '0.5rem 1rem',
+                marginRight: '0.5rem',
+                border: 'none',
+                background: activeTab === 'activity' ? '#3498db' : '#ecf0f1',
+                color: activeTab === 'activity' ? 'white' : '#2c3e50',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Activity
+            </button>
+            <button
+              onClick={handleCollectionTabClick}
+              style={{
+                padding: '0.5rem 1rem',
+                marginRight: '0.5rem',
+                border: 'none',
+                background: activeTab === 'collection' ? '#3498db' : '#ecf0f1',
+                color: activeTab === 'collection' ? 'white' : '#2c3e50',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Data Collection
             </button>
           </div>
           
-          {activeTab === 'form' && nodeExample && (
+          {activeTab === 'business' && nodeExample && (
             renderFormView(nodeExample, nodeProps)
           )}
           
-          {activeTab === 'schema' && (
+          {activeTab === 'record' && (
             <div style={{ color: '#7f8c8d' }}>Empty tab (placeholder)</div>
+          )}
+          {activeTab === 'quality' && (
+            <div style={{ color: '#7f8c8d' }}>Data Quality (placeholder)</div>
+          )}
+          {activeTab === 'activity' && (
+            <div style={{ color: '#7f8c8d' }}>Activity (placeholder)</div>
+          )}
+          {activeTab === 'collection' && (
+            <div style={{ color: '#7f8c8d' }}>Data Collection (placeholder)</div>
           )}
         </div>
       );
@@ -299,54 +330,110 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
       <div>
         <div style={{ marginBottom: '1rem' }}>
           <button
-            onClick={handleFormTabClick}
+            onClick={handleRecordTabClick}
             style={{
               padding: '0.5rem 1rem',
               marginRight: '0.5rem',
               border: 'none',
-              background: activeTab === 'form' ? '#3498db' : '#ecf0f1',
-              color: activeTab === 'form' ? 'white' : '#2c3e50',
+              background: activeTab === 'record' ? '#3498db' : '#ecf0f1',
+              color: activeTab === 'record' ? 'white' : '#2c3e50',
               borderRadius: '4px',
               cursor: 'pointer'
             }}
           >
-            Properties
+            Record Infromation
           </button>
           <button
-            onClick={handleSchemaTabClick}
+            onClick={handleBusinessTabClick}
             style={{
               padding: '0.5rem 1rem',
               marginRight: '0.5rem',
               border: 'none',
-              background: activeTab === 'schema' ? '#3498db' : '#ecf0f1',
-              color: activeTab === 'schema' ? 'white' : '#2c3e50',
+              background: activeTab === 'business' ? '#3498db' : '#ecf0f1',
+              color: activeTab === 'business' ? 'white' : '#2c3e50',
               borderRadius: '4px',
               cursor: 'pointer'
             }}
           >
-            Other
+            Business Data
+          </button>
+          <button
+            onClick={handleQualityTabClick}
+            style={{
+              padding: '0.5rem 1rem',
+              marginRight: '0.5rem',
+              border: 'none',
+              background: activeTab === 'quality' ? '#3498db' : '#ecf0f1',
+              color: activeTab === 'quality' ? 'white' : '#2c3e50',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Data Quality
+          </button>
+          <button
+            onClick={handleActivityTabClick}
+            style={{
+              padding: '0.5rem 1rem',
+              marginRight: '0.5rem',
+              border: 'none',
+              background: activeTab === 'activity' ? '#3498db' : '#ecf0f1',
+              color: activeTab === 'activity' ? 'white' : '#2c3e50',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Activity
+          </button>
+          <button
+            onClick={handleCollectionTabClick}
+            style={{
+              padding: '0.5rem 1rem',
+              marginRight: '0.5rem',
+              border: 'none',
+              background: activeTab === 'collection' ? '#3498db' : '#ecf0f1',
+              color: activeTab === 'collection' ? 'white' : '#2c3e50',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Data Collection
           </button>
         </div>
         
-        {activeTab === 'form' && example && (() => {
+        {activeTab === 'business' && example && (() => {
           // For loaded OSDU data, use the 'data' property if it exists
           const dataToRender = example.data ? example.data : example;
           return renderFormView(dataToRender, SchemaUtils.resolveSchemaProperties(schema?.properties?.data));
         })()}
         
-        {activeTab === 'schema' && (
+        {activeTab === 'record' && (
           <div style={{ color: '#7f8c8d' }}>Empty tab (placeholder)</div>
+        )}
+        {activeTab === 'quality' && (
+          <div style={{ color: '#7f8c8d' }}>Data Quality (placeholder)</div>
+        )}
+        {activeTab === 'activity' && (
+          <div style={{ color: '#7f8c8d' }}>Activity (placeholder)</div>
+        )}
+        {activeTab === 'collection' && (
+          <div style={{ color: '#7f8c8d' }}>Data Collection (placeholder)</div>
         )}
       </div>
     );
   };
 
   return (
-    <div className="properties-panel">
+    <div
+      className="properties-panel"
+      style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+    >
       <h3 style={{ marginBottom: '1rem', color: '#2c3e50' }}>
         Properties & Data
       </h3>
-      {renderContent()}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        {renderContent()}
+      </div>
     </div>
   );
 };
