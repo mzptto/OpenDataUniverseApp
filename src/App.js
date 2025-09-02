@@ -300,6 +300,7 @@ function App() {
               initialTransform={getCurrentTransform()}
               exampleData={appState.selectedEntity?.example}
               fileName={appState.selectedEntity?.fileName}
+              enableDataFading={appState.liveDataMode}
             />
           </div>
           

@@ -10,7 +10,7 @@ import { EntityLabelUtils } from '../utils/entityLabelUtils';
 // 4 - Upgrade the interaction with properties.
 // 5 - Apply 5 buttons on the top right showing the aspects of data quality [DQ, TA, Lineage, ]
 
-const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, entityNameVersion, kind, onTransformChange, initialTransform, exampleData, fileName }) => {
+const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, entityNameVersion, kind, onTransformChange, initialTransform, exampleData, fileName, enableDataFading = true }) => {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const transformRef = useRef({ scale: 1, translateX: 0, translateY: 0 });
@@ -132,6 +132,7 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
             const adjacency = SVGUtils.buildAdjacency(svgElement);
 
             const applyDataBasedGreying = () => {
+              if (!enableDataFading) return;
               if (!exampleData) return;
               
               const presentFields = SVGUtils.analyzeDataPresence(exampleData);
@@ -228,14 +229,14 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
             const onSvgClick = (e) => {
               if (e.target.closest && e.target.closest('g.node')) return; // ignore node clicks
               SVGUtils.clearFocus(svgElement);
-              applyDataBasedGreying(); // Reapply data-based greying after clearing focus
+              if (enableDataFading) applyDataBasedGreying(); // Reapply only when enabled
               if (onNodeClick) onNodeClick(null);
             };
             svgElement.addEventListener('click', onSvgClick);
             
             // Apply initial data-based greying (after ensuring styles exist)
             SVGUtils.ensureStyles(svgElement);
-            applyDataBasedGreying();
+            if (enableDataFading) applyDataBasedGreying();
 
             // Use saved transform or smart centering after layout
             const smartCenter = () => {
@@ -307,7 +308,7 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
       isCancelled = true;
       if (cleanup) cleanup();
     };
-  }, [pumlContent, exampleData]);
+  }, [pumlContent, exampleData, enableDataFading]);
 
 
 
