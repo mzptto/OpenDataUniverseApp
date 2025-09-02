@@ -10,12 +10,21 @@ import { EntityLabelUtils } from '../utils/entityLabelUtils';
 // 4 - Upgrade the interaction with properties.
 // 5 - Apply 5 buttons on the top right showing the aspects of data quality [DQ, TA, Lineage, ]
 
-const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, entityNameVersion, kind, onTransformChange, initialTransform, exampleData, fileName, enableDataFading = true }) => {
+const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, entityNameVersion, kind, onTransformChange, initialTransform, exampleData, fileName, enableDataFading = false }) => {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const transformRef = useRef({ scale: 1, translateX: 0, translateY: 0 });
   const isDraggingRef = useRef(false);
   const [loading, setLoading] = useState(false);
+
+  // Clear any faded/highlighted classes when fading is disabled
+  useEffect(() => {
+    const svgElement = svgRef.current;
+    if (!svgElement) return;
+    if (!enableDataFading) {
+      SVGUtils.clearFocus(svgElement);
+    }
+  }, [enableDataFading]);
 
   // Apply transform directly to SVG
   const applyTransform = () => {

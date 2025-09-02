@@ -56,7 +56,8 @@ function App() {
     setAppState(prev => ({
       ...prev,
       selectedEntity: entity,
-      selectedNode: null
+      selectedNode: null,
+      liveDataMode: false
     }));
   }, []);
 
