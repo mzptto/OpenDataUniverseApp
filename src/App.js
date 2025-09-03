@@ -1,12 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import EntityBrowser from './components/EntityBrowser';
+import ActivityBar from './components/ActivityBar';
+import Sidebar from './components/Sidebar';
 import DiagramViewer from './components/DiagramViewer';
 import PropertiesPanel from './components/PropertiesPanel';
+import SearchResults from './components/SearchResults';
 import FileSelector from './components/FileSelector';
 import ErrorBoundary from './components/ErrorBoundary';
+import IconPreview from './components/IconPreview';
 import { DataLoader } from './utils/dataLoader';
 import { sampleEntities } from './data/sampleData';
-import { Menu } from 'lucide-react';
 
 function App() {
   const [entities, setEntities] = useState(sampleEntities);
@@ -14,9 +16,15 @@ function App() {
   const [appState, setAppState] = useState({
     selectedEntity: null,
     selectedNode: null,
-    sidebarOpen: false,
-    liveDataMode: false
+    activeSidebarView: 'entities',
+    liveDataMode: false,
+    mainContentView: 'entities' // Track main content independently
   });
+  const [searchState, setSearchState] = useState({
+    results: null,
+    loading: false
+  });
+  const [isConnected, setIsConnected] = useState(false);
   
   // Load entities on component mount
   useEffect(() => {
@@ -123,15 +131,9 @@ function App() {
         matchingEntity = entities.find(e => e.name.toLowerCase() === base && e.version === version);
         console.log('Match in current chunk:', !!matchingEntity);
 
-        // If not found (due to chunked loading), search full data set
+        // If not found in current chunk, skip full dataset search for now
         if (!matchingEntity) {
-          try {
-            const { osduEntities } = await import('./data/osduEntities.js');
-            matchingEntity = osduEntities.find(e => e.name.toLowerCase() === base && e.version === version);
-            console.log('Match in full dataset:', !!matchingEntity);
-          } catch (e) {
-            console.warn('Could not import full osduEntities for exact match', e);
-          }
+          console.log('Entity not found in current chunk, skipping full dataset search');
         }
       }
     }
@@ -217,6 +219,80 @@ function App() {
     return entityTransforms.get(appState.selectedEntity?.name) || null;
   }, [entityTransforms, appState.selectedEntity?.name]);
 
+  const handleSidebarViewChange = useCallback((view) => {
+    setAppState(prev => ({ 
+      ...prev, 
+      activeSidebarView: view,
+      // Only update main content view when a sidebar is actually opened
+      mainContentView: view || prev.mainContentView
+    }));
+  }, []);
+
+  const handleSearch = useCallback(async (searchBody) => {
+    setSearchState({ results: null, loading: true });
+    
+    try {
+      const response = await fetch('http://localhost:3001/api/search', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(searchBody)
+      });
+      
+      const responseText = await response.text();
+      const jsonResponse = JSON.parse(responseText);
+      
+      setSearchState({ results: jsonResponse, loading: false });
+      setIsConnected(response.ok);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchState({ results: null, loading: false });
+      setIsConnected(false);
+    }
+  }, []);
+
+  const handleRecordSelect = useCallback(async (record) => {
+    try {
+      // Fetch full record data
+      const response = await fetch(`http://localhost:3001/api/storage/${encodeURIComponent(record.id)}`);
+      const fullRecord = await response.json();
+      
+      // Extract entity info from kind
+      const kind = record.kind || record.type || '';
+      const kindMatch = kind.match(/^[\w\-.]+:[\w\-.]+:([\w\-.]+):([0-9]+\.[0-9]+\.[0-9]+)$/);
+      
+      if (kindMatch) {
+        const entityPart = kindMatch[1];
+        const version = kindMatch[2];
+        const base = entityPart.replace(/^(master-data--|work-product-component--|reference-data--)/, '').toLowerCase();
+        
+        // Find matching entity
+        const matchingEntity = entities.find(e => e.name.toLowerCase() === base && e.version === version);
+        
+        const entityToUse = matchingEntity ? {
+          ...matchingEntity,
+          example: fullRecord,
+          fileName: `${record.id.split(':').pop()}.json`
+        } : {
+          name: base,
+          schema: null,
+          example: fullRecord,
+          pumlContent: null,
+          fileName: `${record.id.split(':').pop()}.json`
+        };
+        
+        setAppState(prev => ({
+          ...prev,
+          selectedEntity: entityToUse,
+          selectedNode: null,
+          liveDataMode: true,
+          mainContentView: 'entities'
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading record:', error);
+    }
+  }, [entities]);
+
   if (isLoadingEntities) {
     return (
       <div className="app">
@@ -238,83 +314,110 @@ function App() {
   return (
     <ErrorBoundary>
       <div className="app">
-        <header className="header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button
-              onClick={() => setAppState(prev => ({ ...prev, sidebarOpen: !prev.sidebarOpen }))}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'white',
-                cursor: 'pointer',
-                padding: '0.5rem'
-              }}
-            >
-              <Menu size={24} />
-            </button>
-            <div style={{ flex: 1 }}>
-              <h1>OSDU Data Model Explorer</h1>
-              <p>Interactive visualization of OSDU schema relationships and data structures ({entities.length} entities loaded)</p>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <button
-                onClick={() => setAppState(prev => ({ ...prev, liveDataMode: !prev.liveDataMode }))}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: appState.liveDataMode ? '#e74c3c' : '#95a5a6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                {appState.liveDataMode ? 'Exit Live Data' : 'Live Data'}
-              </button>
-              {appState.liveDataMode && <FileSelector onFileSelect={handleFileSelect} />}
-            </div>
-          </div>
-        </header>
-      
-      <div className="main-content">
-        {appState.sidebarOpen && <div className="sidebar-overlay open" onClick={() => setAppState(prev => ({ ...prev, sidebarOpen: false }))} />}
+        <ActivityBar 
+          activeView={appState.activeSidebarView}
+          onViewChange={handleSidebarViewChange}
+        />
         
-        <EntityBrowser
+        <Sidebar
+          activeView={appState.activeSidebarView}
           entities={entities}
           selectedEntity={appState.selectedEntity}
           onEntitySelect={handleEntitySelect}
-          isOpen={appState.sidebarOpen}
-          onClose={() => setAppState(prev => ({ ...prev, sidebarOpen: false }))}
+          onFileSelect={handleFileSelect}
+          onSearch={handleSearch}
+          onClose={() => setAppState(prev => ({ ...prev, activeSidebarView: null }))}
         />
         
-        <div className="content-area">
-          <div className="diagram-header">Data Model - E-R Diagram</div>
-          <div className="diagram-container">
-            <DiagramViewer
-              key={(appState.selectedEntity?.name && appState.selectedEntity?.version) ? `${appState.selectedEntity.name}:${appState.selectedEntity.version}` : (appState.selectedEntity?.name || 'default')}
-              pumlContent={appState.selectedEntity?.pumlContent}
-              onNodeClick={handleNodeClick}
-              entityName={appState.selectedEntity?.name}
-              entityVersion={appState.selectedEntity?.version}
-              kind={(appState.selectedEntity?.schema?.kind) || (appState.selectedEntity?.example?.kind)}
-              onTransformChange={handleTransformChange}
-              initialTransform={getCurrentTransform()}
-              exampleData={appState.selectedEntity?.example}
-              fileName={appState.selectedEntity?.fileName}
-              enableDataFading={appState.liveDataMode}
-            />
+        <div className="main-container">
+          <header className="header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ flex: 1 }}>
+                <h1>Energy Data Insights - Explorer</h1>
+                <p>EDI Data Platform - {isConnected ? 'connected' : 'not connected'}</p>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <button
+                  onClick={() => {
+                    if (appState.liveDataMode) {
+                      setAppState(prev => ({ 
+                        ...prev, 
+                        liveDataMode: false,
+                        mainContentView: 'search'
+                      }));
+                    } else {
+                      setAppState(prev => ({ ...prev, liveDataMode: true }));
+                    }
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: appState.liveDataMode ? '#e74c3c' : '#95a5a6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  {appState.liveDataMode ? 'Back to Search' : 'Live Data'}
+                </button>
+                {appState.liveDataMode && <FileSelector onFileSelect={handleFileSelect} />}
+              </div>
+            </div>
+          </header>
+          
+          <div className="main-content">
+            <div className="content-area">
+              {appState.mainContentView === 'search' ? (
+                <>
+                  <div className="diagram-header">Search Service</div>
+                  <div className="diagram-container">
+                    <SearchResults 
+                      searchResponse={searchState.results}
+                      loading={searchState.loading}
+                      onRecordSelect={handleRecordSelect}
+                    />
+                  </div>
+                </>
+              ) : appState.mainContentView === 'icons' ? (
+                <>
+                  <div className="diagram-header">Icon Preview</div>
+                  <div className="diagram-container">
+                    <IconPreview />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="diagram-header">Data Model - E-R Diagram</div>
+                  <div className="diagram-container">
+                    <DiagramViewer
+                      key={(appState.selectedEntity?.name && appState.selectedEntity?.version) ? `${appState.selectedEntity.name}:${appState.selectedEntity.version}` : (appState.selectedEntity?.name || 'default')}
+                      pumlContent={appState.selectedEntity?.pumlContent}
+                      onNodeClick={handleNodeClick}
+                      entityName={appState.selectedEntity?.name}
+                      entityVersion={appState.selectedEntity?.version}
+                      kind={(appState.selectedEntity?.schema?.kind) || (appState.selectedEntity?.example?.kind)}
+                      onTransformChange={handleTransformChange}
+                      initialTransform={getCurrentTransform()}
+                      exampleData={appState.selectedEntity?.example}
+                      fileName={appState.selectedEntity?.fileName}
+                      enableDataFading={appState.liveDataMode}
+                    />
+                  </div>
+                  
+                  <ResizeHandle />
+                  
+                  <div className="diagram-header">Data & Properties</div>
+                  <PropertiesPanel
+                    schema={appState.selectedEntity?.schema}
+                    example={appState.selectedEntity?.example}
+                    selectedNode={appState.selectedNode}
+                  />
+                </>
+              )}
+            </div>
           </div>
-          
-          <ResizeHandle />
-          
-          <div className="diagram-header">Data & Properties</div>
-          <PropertiesPanel
-            schema={appState.selectedEntity?.schema}
-            example={appState.selectedEntity?.example}
-            selectedNode={appState.selectedNode}
-          />
         </div>
-      </div>
       </div>
     </ErrorBoundary>
   );

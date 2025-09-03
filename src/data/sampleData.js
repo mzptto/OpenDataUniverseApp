@@ -73,6 +73,35 @@ Wellbore --> WellboreReason : "WellboreReasonID"
     example: {
       "id": "namespace:master-data--Wellbore:c7c421a7-f496-5aef-8093-298c32bfdea9",
       "kind": "osdu:wks:master-data--Wellbore:1.5.1",
+      "version": 1562066009929332,
+      "acl": {
+        "owners": ["data-engineer@company.com"],
+        "viewers": ["geologist@company.com", "engineer@company.com"]
+      },
+      "legal": {
+        "legaltags": ["public-domain", "north-sea-data"],
+        "otherRelevantDataCountries": ["NO", "UK"],
+        "status": "compliant"
+      },
+      "tags": {
+        "project": "North Sea Development",
+        "operator": "Example Oil Company"
+      },
+      "createTime": "2023-01-15T10:30:00.000Z",
+      "createUser": "data-engineer@company.com",
+      "modifyTime": "2023-06-20T14:45:30.000Z",
+      "modifyUser": "geologist@company.com",
+      "ancestry": {
+        "parents": ["namespace:master-data--Well:parent-well-id"]
+      },
+      "meta": [
+        {
+          "kind": "Unit",
+          "name": "m",
+          "unitOfMeasureID": "namespace:reference-data--UnitOfMeasure:m:",
+          "propertyNames": ["VerticalMeasurement", "Depth"]
+        }
+      ],
       "data": {
         "WellID": "namespace:master-data--Well:SomeUniqueWellID:",
         "SequenceNumber": 2,
@@ -137,6 +166,24 @@ Well --> WellType : "WellTypeID"
     example: {
       "id": "namespace:master-data--Well:SomeUniqueWellID:",
       "kind": "osdu:wks:master-data--Well:1.3.0",
+      "version": 1562066009929331,
+      "acl": {
+        "owners": ["field-manager@company.com"],
+        "viewers": ["operations@company.com"]
+      },
+      "legal": {
+        "legaltags": ["public-domain"],
+        "otherRelevantDataCountries": ["NO"],
+        "status": "compliant"
+      },
+      "createTime": "2023-01-10T08:00:00.000Z",
+      "createUser": "field-manager@company.com",
+      "modifyTime": "2023-01-15T10:30:00.000Z",
+      "modifyUser": "data-engineer@company.com",
+      "ancestry": {
+        "parents": []
+      },
+      "meta": [],
       "data": {
         "FieldID": "namespace:master-data--Field:SomeUniqueFieldID:",
         "OperatorID": "namespace:master-data--Organisation:SomeUniqueOrganisationID:",

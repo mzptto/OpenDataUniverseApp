@@ -109,28 +109,6 @@ const FileSelector = ({ onFileSelect }) => {
           />
         </label>
       </div>
-      
-      <div>
-        <label style={{ 
-          padding: '0.5rem 1rem', 
-          background: '#2ecc71', 
-          color: 'white', 
-          borderRadius: '4px', 
-          cursor: 'pointer',
-          fontSize: '14px'
-        }}>
-          {isLoading ? 'Loading...' : 'Select Folder'}
-          <input
-            type="file"
-            webkitdirectory=""
-            multiple
-            onChange={handleFolderSelect}
-            style={{ display: 'none' }}
-            disabled={isLoading}
-          />
-        </label>
-      </div>
-
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ReferenceDataManager } from '../data/ReferenceDataManager';
+import RecordInfoPanel from './RecordInfoPanel';
 
 // Reference Data Dropdown Component
 const ReferenceDataDropdown = ({ value, style }) => {
@@ -455,7 +456,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
           )}
           
           {activeTab === 'record' && (
-            <div style={{ color: '#7f8c8d' }}>Empty tab (placeholder)</div>
+            <RecordInfoPanel example={example} />
           )}
           {activeTab === 'quality' && (
             <div style={{ color: '#7f8c8d' }}>Data Quality (placeholder)</div>
@@ -552,7 +553,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
         })()}
         
         {activeTab === 'record' && (
-          <div style={{ color: '#7f8c8d' }}>Empty tab (placeholder)</div>
+          <RecordInfoPanel example={example} />
         )}
         {activeTab === 'quality' && (
           <div style={{ color: '#7f8c8d' }}>Data Quality (placeholder)</div>

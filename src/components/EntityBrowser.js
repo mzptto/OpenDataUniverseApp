@@ -47,7 +47,7 @@ const EntityBrowser = ({ entities, selectedEntity, onEntitySelect, isOpen, onClo
   if (!isOpen) return null;
   
   return (
-    <div style={{
+    <div className="entity-browser" style={{
       position: 'fixed',
       top: 0,
       left: 0,
