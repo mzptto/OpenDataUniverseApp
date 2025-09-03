@@ -1,0 +1,120 @@
+# Working OSDU GraphQL Search Queries
+
+# 1. Basic Search with Variables
+query SearchRecords($query: String!, $index: String!, $dataPartition: String!) {
+  search(input: {
+    query: $query,
+    index: $index,
+    dataPartition: $dataPartition
+  }) {
+    total
+    items
+  }
+}
+
+# Variables for Basic Search:
+# {
+#   "query": "*",
+#   "index": "*",
+#   "dataPartition": "osdu"
+# }
+
+# 2. Filtered Search for Work Product Components
+query SearchWorkProducts($query: String!, $index: String!, $dataPartition: String!) {
+  search(input: {
+    query: $query,
+    index: $index,
+    dataPartition: $dataPartition
+  }) {
+    total
+    items
+  }
+}
+
+# Variables for Work Products:
+# {
+#   "query": "kind:*work-product-component*",
+#   "index": "*",
+#   "dataPartition": "osdu"
+# }
+
+# 3. Search All Records
+query SearchAllRecords {
+  search(input: {
+    query: "",
+    index: "",
+    dataPartition: "osdu"
+  }) {
+    total
+    items
+  }
+}
+
+# 4. Search by Specific Kind Pattern
+query SearchByKind($query: String!, $index: String!, $dataPartition: String!) {
+  search(input: {
+    query: $query,
+    index: $index,
+    dataPartition: $dataPartition
+  }) {
+    total
+    items
+  }
+}
+
+# Variables for Kind Search:
+# {
+#   "query": "kind:osdu:wks:master-data--*",
+#   "index": "*",
+#   "dataPartition": "osdu"
+# }
+
+# 5. Static Query (No Variables)
+query SearchStatic {
+  search(input: {
+    query: "*",
+    index: "*",
+    dataPartition: "osdu"
+  }) {
+    total
+    items
+  }
+}
+
+# 6. Search by Index Pattern
+query SearchByIndex($query: String!, $index: String!, $dataPartition: String!) {
+  search(input: {
+    query: $query,
+    index: $index,
+    dataPartition: $dataPartition
+  }) {
+    total
+    items
+  }
+}
+
+# Variables for Index Search:
+# {
+#   "query": "*",
+#   "index": "osdu:wks:*",
+#   "dataPartition": "osdu"
+# }
+
+# 7. Empty Query Search
+query SearchEmpty($query: String!, $index: String!, $dataPartition: String!) {
+  search(input: {
+    query: $query,
+    index: $index,
+    dataPartition: $dataPartition
+  }) {
+    total
+    items
+  }
+}
+
+# Variables for Empty Search:
+# {
+#   "query": "",
+#   "index": "",
+#   "dataPartition": "osdu"
+# }

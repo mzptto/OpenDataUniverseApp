@@ -1,0 +1,12 @@
+{
+  "name": "osdu-proxy",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node proxy.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "node-fetch": "^2.6.7"
+  }
+}

@@ -1,0 +1,52 @@
+# Default search (returns 10 items)
+query {
+  search(input: {
+    query: "",
+    index: "",
+    dataPartition: "osdu"
+  }) {
+    total
+    items
+  }
+}
+
+# Get more results with limit
+query {
+  search(input: {
+    query: "",
+    index: "",
+    dataPartition: "osdu",
+    limit: 100
+  }) {
+    total
+    items
+  }
+}
+
+# Pagination with offset
+query {
+  search(input: {
+    query: "",
+    index: "",
+    dataPartition: "osdu",
+    limit: 50,
+    offset: 0
+  }) {
+    total
+    items
+  }
+}
+
+# Get next page
+query {
+  search(input: {
+    query: "",
+    index: "",
+    dataPartition: "osdu",
+    limit: 50,
+    offset: 50
+  }) {
+    total
+    items
+  }
+}

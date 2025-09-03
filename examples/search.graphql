@@ -1,0 +1,23 @@
+# This is the structure that works.
+query {
+search(input: {
+query: "",
+index: "",
+dataPartition: "osdu"
+}) {
+total
+items:
+}
+}
+
+# Work Product Component Search
+query {
+search(input: {
+query: "master--data",
+index: "",
+dataPartition: "osdu"
+}) {
+total
+items
+}
+}
