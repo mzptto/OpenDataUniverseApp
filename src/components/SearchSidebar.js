@@ -93,7 +93,7 @@ const SearchSidebar = ({ entities = [], onSearch }) => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ token: newToken.trim() })
+        body: JSON.stringify({ token: newToken.trim().replace(/^Bearer\s+/i, '') })
       });
       
       if (response.ok) {
