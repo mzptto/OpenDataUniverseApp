@@ -137,7 +137,7 @@ const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
       // Use local proxy for development, deployed API for production
       const isDevelopment = window.location.hostname === 'localhost';
       const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
-      const storageEndpoint = `${apiUrl}/api/storage/${encodeURIComponent(recordId)}`;
+      const storageEndpoint = `${apiUrl}/api/storage/${encodeURIComponent(recordId)}/`;
       
       const result = await fetch(storageEndpoint, {
         method: 'GET',
