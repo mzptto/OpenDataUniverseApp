@@ -1,0 +1,80 @@
+digraph OSDU_Hierarchy {
+    // Graph settings
+    rankdir=TB;
+    node [shape=box, style=filled, fontname="Arial", fontsize=10];
+    edge [fontname="Arial", fontsize=8];
+    
+    // Color scheme
+    subgraph cluster_legend {
+        label="Legend";
+        style=filled;
+        color=lightgrey;
+        
+        org_legend [label="Organisation\n(Master Data)", fillcolor="#ffa080"];
+        asset_legend [label="Physical Assets\n(Master Data)", fillcolor="#ffb366"];
+        data_legend [label="Work Product\nComponents", fillcolor="#f9d949"];
+        dataset_legend [label="Datasets/Files", fillcolor="#ddddff"];
+    }
+    
+    // Top Level - Organisation
+    Organisation [label="Organisation\n(Field Operator)", fillcolor="#ffa080"];
+    
+    // Asset Hierarchy
+    Field [label="Field\n(Oil/Gas Field)", fillcolor="#ffb366"];
+    Well [label="Well", fillcolor="#ffb366"];
+    Wellbore [label="Wellbore", fillcolor="#ffb366"];
+    
+    // Field-level Data
+    SeismicTraceData [label="Seismic\nTrace Data", fillcolor="#f9d949"];
+    SeismicHorizon [label="Seismic\nHorizon", fillcolor="#f9d949"];
+    SeismicBinGrid [label="Seismic\nBin Grid", fillcolor="#f9d949"];
+    
+    // Well-level Data  
+    WellActivity [label="Well\nActivity", fillcolor="#ffb366"];
+    WellLicense [label="Well\nLicense", fillcolor="#ffb366"];
+    
+    // Wellbore-level Data
+    WellboreTrajectory [label="Wellbore\nTrajectory", fillcolor="#f9d949"];
+    WellLog [label="Well Log", fillcolor="#f9d949"];
+    WellboreMarkerSet [label="Wellbore\nMarker Set", fillcolor="#f9d949"];
+    WellboreIntervalSet [label="Wellbore\nInterval Set", fillcolor="#f9d949"];
+    
+    // Dataset/File level
+    SeismicFile [label="Seismic\nDataset Files", fillcolor="#ddddff"];
+    WellLogFile [label="Well Log\nDataset Files", fillcolor="#ddddff"];
+    TrajectoryFile [label="Trajectory\nDataset Files", fillcolor="#ddddff"];
+    
+    // Primary ownership/operational relationships
+    Organisation -> Field [label="owns/operates", color=red, penwidth=2];
+    Field -> Well [label="contains", color=red, penwidth=2];
+    Well -> Wellbore [label="contains", color=red, penwidth=2];
+    
+    // Data relationships to assets
+    Field -> SeismicTraceData [label="has seismic data", color=blue];
+    Field -> SeismicHorizon [label="has interpretations", color=blue];
+    Field -> SeismicBinGrid [label="has survey grids", color=blue];
+    
+    Well -> WellActivity [label="has activities", color=blue];
+    Well -> WellLicense [label="has licenses", color=blue];
+    
+    Wellbore -> WellboreTrajectory [label="has trajectory", color=blue];
+    Wellbore -> WellLog [label="has logs", color=blue];
+    Wellbore -> WellboreMarkerSet [label="has markers", color=blue];
+    Wellbore -> WellboreIntervalSet [label="has intervals", color=blue];
+    
+    // Data to file relationships
+    SeismicTraceData -> SeismicFile [label="stored in", color=green, style=dashed];
+    SeismicHorizon -> SeismicFile [label="stored in", color=green, style=dashed];
+    SeismicBinGrid -> SeismicFile [label="stored in", color=green, style=dashed];
+    
+    WellLog -> WellLogFile [label="stored in", color=green, style=dashed];
+    WellboreTrajectory -> TrajectoryFile [label="stored in", color=green, style=dashed];
+    
+    // Cross-references (dotted lines for context)
+    Organisation -> Well [label="operates", style=dotted, color=gray];
+    Organisation -> Wellbore [label="operates", style=dotted, color=gray];
+    
+    // Geo-context relationships
+    Field -> Well [label="geo context", style=dotted, color=purple];
+    Field -> Wellbore [label="geo context", style=dotted, color=purple];
+}

@@ -423,8 +423,10 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
               transformRef.current = initialTransform;
               applyTransform();
             } else {
-              // Defer centering to next frame(s) to ensure layout size is available
-              requestAnimationFrame(() => smartCenter());
+              // Apply immediate centering like the blue button does
+              transformRef.current = { scale: 1, translateX: 0, translateY: 0 };
+              applyTransform();
+              if (entityName && onTransformChange) onTransformChange(entityName, { ...transformRef.current });
             }
 
 

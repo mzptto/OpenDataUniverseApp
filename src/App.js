@@ -7,8 +7,11 @@ import SearchResults from './components/SearchResults';
 import FileSelector from './components/FileSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import IconPreview from './components/IconPreview';
+import ServerlessEDI from './components/ServerlessEDI';
+import OSDUHierarchyViewer from './components/OSDUHierarchyViewer';
 import { DataLoader } from './utils/dataLoader';
 import { sampleEntities } from './data/sampleData';
+// AWS config removed - using simple auth
 
 function App() {
   const [entities, setEntities] = useState(sampleEntities);
@@ -16,15 +19,16 @@ function App() {
   const [appState, setAppState] = useState({
     selectedEntity: null,
     selectedNode: null,
-    activeSidebarView: 'entities',
+    activeSidebarView: null,
     liveDataMode: false,
-    mainContentView: 'entities' // Track main content independently
+    mainContentView: 'hierarchy' // Default to hierarchy view
   });
   const [searchState, setSearchState] = useState({
     results: null,
     loading: false
   });
   const [isConnected, setIsConnected] = useState(false);
+  const [authState, setAuthState] = useState({ user: null, signOut: null, isAuthenticated: false });
   
   // Load entities on component mount
   useEffect(() => {
@@ -228,6 +232,14 @@ function App() {
     }));
   }, []);
 
+  const handleHierarchyView = useCallback(() => {
+    setAppState(prev => ({ 
+      ...prev, 
+      activeSidebarView: null,
+      mainContentView: 'hierarchy'
+    }));
+  }, []);
+
   const handleSearch = useCallback(async (searchBody) => {
     setSearchState({ results: null, loading: true });
     
@@ -248,6 +260,10 @@ function App() {
       setSearchState({ results: null, loading: false });
       setIsConnected(false);
     }
+  }, []);
+
+  const handleAuthStateChange = useCallback((newAuthState) => {
+    setAuthState(newAuthState);
   }, []);
 
   const handleRecordSelect = useCallback(async (record) => {
@@ -322,6 +338,7 @@ function App() {
         <ActivityBar 
           activeView={appState.activeSidebarView}
           onViewChange={handleSidebarViewChange}
+          onHierarchyView={handleHierarchyView}
         />
         
         <Sidebar
@@ -332,6 +349,7 @@ function App() {
           onFileSelect={handleFileSelect}
           onSearch={handleSearch}
           onClose={() => setAppState(prev => ({ ...prev, activeSidebarView: null }))}
+          onAuthStateChange={handleAuthStateChange}
         />
         
         <div className="main-container">
@@ -389,6 +407,33 @@ function App() {
                   <div className="diagram-header">Icon Preview</div>
                   <div className="diagram-container" style={{ flex: '1 1 auto', minHeight: 0 }}>
                     <IconPreview />
+                  </div>
+                </>
+              ) : appState.mainContentView === 'serverless' ? (
+                <>
+                  <div className="diagram-header">Serverless EDI</div>
+                  <div className="diagram-container" style={{ flex: '1 1 auto', minHeight: 0 }}>
+                    {authState.isAuthenticated ? (
+                      <ServerlessEDI user={authState.user} signOut={authState.signOut} />
+                    ) : (
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center', 
+                        flex: 1,
+                        fontSize: '16px',
+                        color: '#666'
+                      }}>
+                        Please authenticate using the sidebar to access Serverless EDI
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : appState.mainContentView === 'hierarchy' ? (
+                <>
+                  <div className="diagram-header">OSDU Data Model Hierarchy</div>
+                  <div className="diagram-container" style={{ flex: '1 1 auto', minHeight: 0 }}>
+                    <OSDUHierarchyViewer />
                   </div>
                 </>
               ) : (
