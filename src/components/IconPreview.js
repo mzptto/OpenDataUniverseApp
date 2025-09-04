@@ -98,7 +98,7 @@ const IconPreview = () => {
   ];
 
   return (
-    <div style={{ padding: '2rem', background: 'white', minHeight: '100vh' }}>
+    <div style={{ padding: '2rem', background: 'white', height: '100%', overflow: 'auto' }}>
       <h1 style={{ marginBottom: '2rem', color: '#333' }}>Lucide React Icons Preview</h1>
       
       {iconCategories.map((category, categoryIndex) => (

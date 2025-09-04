@@ -167,7 +167,7 @@ const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        height: '400px',
+        flex: 1,
         fontSize: '16px',
         color: '#666'
       }}>
@@ -182,7 +182,7 @@ const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        height: '400px',
+        flex: 1,
         fontSize: '16px',
         color: '#666'
       }}>
@@ -197,7 +197,7 @@ const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        height: '400px',
+        flex: 1,
         fontSize: '16px',
         color: '#666'
       }}>
@@ -267,7 +267,7 @@ const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
   );
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div style={{ padding: '1rem', background: 'white', borderBottom: '1px solid #ddd', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#e8f4fd', borderRadius: '4px', fontSize: '14px' }}>
           📊 Found {searchResponse.totalCount || searchResponse.results.length} records

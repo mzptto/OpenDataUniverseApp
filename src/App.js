@@ -263,10 +263,15 @@ function App() {
       if (kindMatch) {
         const entityPart = kindMatch[1];
         const version = kindMatch[2];
-        const base = entityPart.replace(/^(master-data--|work-product-component--|reference-data--)/, '').toLowerCase();
+        const base = entityPart.replace(/^(master-data--|work-product-component--|reference-data--)/, '');
         
-        // Find matching entity
-        const matchingEntity = entities.find(e => e.name.toLowerCase() === base && e.version === version);
+        // Find matching entity using same strategy as handleFileSelect
+        const matchingEntity = entities.find(entity => {
+          const match = entity.name.toLowerCase() === base.toLowerCase() ||
+                       entity.name.toLowerCase().includes(base.toLowerCase()) ||
+                       base.toLowerCase().includes(entity.name.toLowerCase());
+          return match;
+        });
         
         const entityToUse = matchingEntity ? {
           ...matchingEntity,
@@ -371,7 +376,7 @@ function App() {
               {appState.mainContentView === 'search' ? (
                 <>
                   <div className="diagram-header">Search Service</div>
-                  <div className="diagram-container">
+                  <div className="diagram-container" style={{ flex: '1 1 auto', minHeight: 0 }}>
                     <SearchResults 
                       searchResponse={searchState.results}
                       loading={searchState.loading}
@@ -382,7 +387,7 @@ function App() {
               ) : appState.mainContentView === 'icons' ? (
                 <>
                   <div className="diagram-header">Icon Preview</div>
-                  <div className="diagram-container">
+                  <div className="diagram-container" style={{ flex: '1 1 auto', minHeight: 0 }}>
                     <IconPreview />
                   </div>
                 </>

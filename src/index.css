@@ -161,6 +161,7 @@ body {
   display: flex;
   overflow: hidden;
   position: relative;
+  min-height: 0;
 }
 
 .content-area {
@@ -168,6 +169,7 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-height: 0;
 }
 
 .diagram-container {
@@ -176,6 +178,7 @@ body {
   position: relative;
   overflow: auto;
   border-bottom: 1px solid #ddd;
+  min-height: 0;
 }
 
 .diagram-header {
