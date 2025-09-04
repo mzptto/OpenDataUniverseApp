@@ -59,11 +59,11 @@ Resources:
           OSDU_SECRET_NAME: !Sub '${ProjectName}-${Environment}-osdu-credentials'
       Timeout: 30
 
-  # Storage API Lambda Function
+  # Storage API Lambda Function (existing)
   StorageApiFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub '${ProjectName}-${Environment}-storage-api'
+      FunctionName: 'osdu-storage-api'
       Runtime: nodejs18.x
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
@@ -77,7 +77,7 @@ Resources:
           };
       Environment:
         Variables:
-          OSDU_SECRET_NAME: !Sub '${ProjectName}-${Environment}-osdu-credentials'
+          OSDU_SECRET_NAME: 'osdu-credentials'
       Timeout: 30
 
   # Token API Lambda Function

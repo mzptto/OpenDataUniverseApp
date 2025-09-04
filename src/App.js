@@ -288,13 +288,10 @@ function App() {
         const version = kindMatch[2];
         const base = entityPart.replace(/^(master-data--|work-product-component--|reference-data--)/, '');
         
-        // Find matching entity using same strategy as handleFileSelect
-        const matchingEntity = entities.find(entity => {
-          const match = entity.name.toLowerCase() === base.toLowerCase() ||
-                       entity.name.toLowerCase().includes(base.toLowerCase()) ||
-                       base.toLowerCase().includes(entity.name.toLowerCase());
-          return match;
-        });
+        // Find matching entity using exact matching (same as EntityBrowser)
+        const matchingEntity = entities.find(entity => 
+          entity.name.toLowerCase() === base.toLowerCase() && entity.version === version
+        );
         
         const entityToUse = matchingEntity ? {
           ...matchingEntity,
