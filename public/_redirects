@@ -1,0 +1,6 @@
+/api/refresh-token/ https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod/api/refresh-token 200!
+/api/refresh-token https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod/api/refresh-token 200!
+/api/search/ https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod/api/search 200!
+/api/search https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod/api/search 200!
+/api/storage/* https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod/api/storage/:splat 200!
+/api/* https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod/api/:splat 200!

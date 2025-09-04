@@ -110,6 +110,13 @@ Resources:
       EndpointConfiguration:
         Types:
           - REGIONAL
+      Policy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: 'execute-api:Invoke'
+            Resource: '*'
 
   # API Gateway Resources
   ApiResource:
@@ -172,12 +179,48 @@ Resources:
         IntegrationHttpMethod: POST
         Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StorageApiFunction.Arn}/invocations'
 
+  SearchOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref SearchResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchApiFunction.Arn}/invocations'
+
+  StorageOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref StorageRecordResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StorageApiFunction.Arn}/invocations'
+
   TokenMethod:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref ApiGateway
       ResourceId: !Ref TokenResource
       HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TokenApiFunction.Arn}/invocations'
+
+  TokenOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref TokenResource
+      HttpMethod: OPTIONS
       AuthorizationType: NONE
       Integration:
         Type: AWS_PROXY
@@ -214,11 +257,15 @@ Resources:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - SearchMethod
+      - SearchOptionsMethod
       - StorageMethod
+      - StorageOptionsMethod
       - TokenMethod
+      - TokenOptionsMethod
     Properties:
       RestApiId: !Ref ApiGateway
       StageName: !Ref Environment
+      Description: 'Deployment with CORS support - 2025-09-04-17:45'
 
 Outputs:
   ApiGatewayUrl:

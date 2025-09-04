@@ -70,7 +70,9 @@ const SearchSidebar = ({ entities = [], onSearch }) => {
     }
   };
 
-  const refreshToken = async () => {
+  const refreshToken = async (e) => {
+    e?.preventDefault(); // Prevent any form submission
+    
     if (!newToken.trim()) {
       alert('Please enter a token');
       return;
@@ -78,9 +80,19 @@ const SearchSidebar = ({ entities = [], onSearch }) => {
     
     setTokenRefreshing(true);
     try {
-      const response = await fetch('http://localhost:3001/api/refresh-token', {
+      // Use local proxy for development, relative paths for production
+      const isDevelopment = window.location.hostname === 'localhost';
+      const apiUrl = isDevelopment ? 'http://localhost:3001' : '';
+      const url = `${apiUrl}/api/refresh-token/`;
+      
+      console.log('Making POST request to:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ token: newToken.trim() })
       });
       
@@ -217,7 +229,8 @@ const SearchSidebar = ({ entities = [], onSearch }) => {
                 }}
               />
               <button
-                onClick={refreshToken}
+                type="button"
+                onClick={(e) => refreshToken(e)}
                 disabled={tokenRefreshing || !newToken.trim()}
                 style={{
                   width: '100%',

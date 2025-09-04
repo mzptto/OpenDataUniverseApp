@@ -244,8 +244,10 @@ function App() {
     setSearchState({ results: null, loading: true });
     
     try {
-      // Use API Gateway URL instead of localhost
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod';
+      // Use local proxy for development, relative paths for production
+      const isDevelopment = window.location.hostname === 'localhost';
+      const apiUrl = isDevelopment ? 'http://localhost:3001' : '';
+      
       const response = await fetch(`${apiUrl}/api/search`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -270,8 +272,10 @@ function App() {
 
   const handleRecordSelect = useCallback(async (record) => {
     try {
-      // Fetch full record data using API Gateway
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod';
+      // Use local proxy for development, relative paths for production
+      const isDevelopment = window.location.hostname === 'localhost';
+      const apiUrl = isDevelopment ? 'http://localhost:3001' : '';
+      
       const response = await fetch(`${apiUrl}/api/storage/${encodeURIComponent(record.id)}`);
       const fullRecord = await response.json();
       

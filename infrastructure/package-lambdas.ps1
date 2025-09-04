@@ -10,8 +10,10 @@ Write-Host "Packaging Lambda functions..." -ForegroundColor Green
 foreach ($func in $functions) {
     Write-Host "Processing $func..." -ForegroundColor Blue
     
-    $funcDir = "..\lambda-functions\$func"
-    $zipFile = "$func.zip"
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $rootDir = Split-Path -Parent $scriptDir
+    $funcDir = Join-Path $rootDir "lambda-functions\$func"
+    $zipFile = Join-Path $scriptDir "$func.zip"
     
     # Install dependencies
     Push-Location $funcDir

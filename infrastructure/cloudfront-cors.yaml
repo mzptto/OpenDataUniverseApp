@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFront distribution for CORS handling'
+
+Parameters:
+  ApiGatewayDomain:
+    Type: String
+    Default: 'zitygaox8b.execute-api.eu-west-1.amazonaws.com'
+
+Resources:
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: 'CORS-enabled API Gateway distribution'
+        Origins:
+          - Id: ApiGatewayOrigin
+            DomainName: !Ref ApiGatewayDomain
+            CustomOriginConfig:
+              HTTPPort: 443
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: ApiGatewayOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - POST
+            - PATCH
+            - DELETE
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          ForwardedValues:
+            QueryString: true
+            Headers:
+              - Authorization
+              - Content-Type
+              - Origin
+              - Access-Control-Request-Method
+              - Access-Control-Request-Headers
+          ResponseHeadersPolicy: !Ref CORSResponseHeadersPolicy
+        PriceClass: PriceClass_100
+
+  CORSResponseHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: 'OSDU-CORS-Policy'
+        Comment: 'CORS policy for OSDU API'
+        CorsConfig:
+          AccessControlAllowCredentials: false
+          AccessControlAllowHeaders:
+            Items:
+              - Content-Type
+              - Authorization
+              - X-Requested-With
+          AccessControlAllowMethods:
+            Items:
+              - GET
+              - POST
+              - OPTIONS
+          AccessControlAllowOrigins:
+            Items:
+              - 'https://prod.d3ibmynp1ulq33.amplifyapp.com'
+              - 'http://localhost:3000'
+          AccessControlMaxAgeSec: 86400
+          OriginOverride: true
+
+Outputs:
+  CloudFrontDomain:
+    Description: 'CloudFront distribution domain'
+    Value: !GetAtt CloudFrontDistribution.DomainName

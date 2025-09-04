@@ -5,17 +5,19 @@ const secretsManager = new AWS.SecretsManager();
 exports.handler = async (event) => {
     const headers = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-        'Access-Control-Allow-Methods': 'GET,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Requested-With',
+        'Access-Control-Allow-Methods': 'GET,OPTIONS,POST',
+        'Access-Control-Max-Age': '86400',
         'Content-Type': 'application/json'
     };
 
     // Handle preflight OPTIONS request
     if (event.httpMethod === 'OPTIONS') {
+        console.log('🔄 OPTIONS preflight request received');
         return {
             statusCode: 200,
             headers,
-            body: ''
+            body: JSON.stringify({ message: 'CORS preflight successful' })
         };
     }
 
