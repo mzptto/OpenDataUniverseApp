@@ -1,0 +1,9 @@
+{
+  "name": "osdu-token-api",
+  "version": "1.0.0",
+  "description": "OSDU Token Refresh API Lambda Function",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1691.0"
+  }
+}

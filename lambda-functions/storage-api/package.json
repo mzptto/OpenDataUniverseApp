@@ -1,0 +1,10 @@
+{
+  "name": "osdu-storage-api",
+  "version": "1.0.0",
+  "description": "OSDU Storage API Lambda Function",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1691.0",
+    "node-fetch": "^2.6.7"
+  }
+}

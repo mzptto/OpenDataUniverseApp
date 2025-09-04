@@ -1,0 +1,23 @@
+{
+  "prod": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-oduapp-prod-573fb-authRole",
+      "UnauthRoleArn": "arn:aws:iam::852515592623:role/amplify-oduapp-prod-573fb-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::852515592623:role/amplify-oduapp-prod-573fb-authRole",
+      "Region": "eu-west-1",
+      "DeploymentBucketName": "amplify-oduapp-prod-573fb-deployment",
+      "UnauthRoleName": "amplify-oduapp-prod-573fb-unauthRole",
+      "StackName": "amplify-oduapp-prod-573fb",
+      "StackId": "arn:aws:cloudformation:eu-west-1:852515592623:stack/amplify-oduapp-prod-573fb/be999230-89a5-11f0-98c8-0629f9dc1145",
+      "AmplifyAppId": "d3ibmynp1ulq33"
+    },
+    "categories": {
+      "hosting": {
+        "amplifyhosting": {
+          "appId": "d3ibmynp1ulq33",
+          "type": "manual"
+        }
+      }
+    }
+  }
+}

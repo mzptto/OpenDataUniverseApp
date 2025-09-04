@@ -244,7 +244,9 @@ function App() {
     setSearchState({ results: null, loading: true });
     
     try {
-      const response = await fetch('http://localhost:3001/api/search', {
+      // Use API Gateway URL instead of localhost
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod';
+      const response = await fetch(`${apiUrl}/api/search`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(searchBody)
@@ -268,8 +270,9 @@ function App() {
 
   const handleRecordSelect = useCallback(async (record) => {
     try {
-      // Fetch full record data
-      const response = await fetch(`http://localhost:3001/api/storage/${encodeURIComponent(record.id)}`);
+      // Fetch full record data using API Gateway
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://zitygaox8b.execute-api.eu-west-1.amazonaws.com/prod';
+      const response = await fetch(`${apiUrl}/api/storage/${encodeURIComponent(record.id)}`);
       const fullRecord = await response.json();
       
       // Extract entity info from kind
