@@ -22,16 +22,17 @@ exports.handler = async (event) => {
     }
 
     try {
-        // Get record ID from path parameters
-        const recordId = event.pathParameters?.recordId;
-        if (!recordId) {
+        // Get record ID from path parameters (decode first since API Gateway already encodes it)
+        const encodedRecordId = event.pathParameters?.recordId;
+        if (!encodedRecordId) {
             return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({ error: 'Record ID is required' })
             };
         }
-
+        
+        const recordId = decodeURIComponent(encodedRecordId);
         console.log('📦 Storage Request for record:', recordId);
         
         // Get OSDU credentials from Secrets Manager
