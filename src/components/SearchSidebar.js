@@ -80,9 +80,9 @@ const SearchSidebar = ({ entities = [], onSearch }) => {
     
     setTokenRefreshing(true);
     try {
-      // Use local proxy for development, relative paths for production
+      // Use local proxy for development, deployed API for production
       const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment ? 'http://localhost:3001' : '';
+      const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
       const url = `${apiUrl}/api/refresh-token/`;
       
       console.log('Making POST request to:', url);
