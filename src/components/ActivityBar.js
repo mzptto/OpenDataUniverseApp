@@ -1,5 +1,5 @@
 import React from 'react';
-import { Folder, Search, Palette, Server, GitBranch } from 'lucide-react';
+import { Folder, Search, Server, GitBranch } from 'lucide-react';
 
 const ActivityBar = ({ activeView, onViewChange, onHierarchyView }) => {
   const handleViewClick = (view) => {
@@ -29,13 +29,7 @@ const ActivityBar = ({ activeView, onViewChange, onHierarchyView }) => {
       >
         <Search size={24} />
       </button>
-      <button 
-        className={`activity-button ${activeView === 'icons' ? 'active' : ''}`}
-        onClick={() => handleViewClick('icons')}
-        title="Icon Preview"
-      >
-        <Palette size={24} />
-      </button>
+
       <button 
         className={`activity-button ${activeView === 'serverless' ? 'active' : ''}`}
         onClick={() => handleViewClick('serverless')}

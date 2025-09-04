@@ -6,7 +6,7 @@ import PropertiesPanel from './components/PropertiesPanel';
 import SearchResults from './components/SearchResults';
 import FileSelector from './components/FileSelector';
 import ErrorBoundary from './components/ErrorBoundary';
-import IconPreview from './components/IconPreview';
+
 import ServerlessEDI from './components/ServerlessEDI';
 import OSDUHierarchyViewer from './components/OSDUHierarchyViewer';
 import { DataLoader } from './utils/dataLoader';
@@ -400,13 +400,6 @@ function App() {
                       loading={searchState.loading}
                       onRecordSelect={handleRecordSelect}
                     />
-                  </div>
-                </>
-              ) : appState.mainContentView === 'icons' ? (
-                <>
-                  <div className="diagram-header">Icon Preview</div>
-                  <div className="diagram-container" style={{ flex: '1 1 auto', minHeight: 0 }}>
-                    <IconPreview />
                   </div>
                 </>
               ) : appState.mainContentView === 'serverless' ? (
