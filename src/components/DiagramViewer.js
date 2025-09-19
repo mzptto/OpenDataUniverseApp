@@ -261,6 +261,7 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
             // Analyze which fields are present in the example data
             const analyzeDataPresence = (data) => {
               const presentFields = new Set();
+              const presentValues = new Set();
               const traverse = (obj, path = '') => {
                 if (!obj || typeof obj !== 'object') return;
                 for (const [key, value] of Object.entries(obj)) {
@@ -268,11 +269,17 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
                   if (value !== null && value !== undefined && value !== '') {
                     presentFields.add(key);
                     presentFields.add(fieldPath);
+                    // Also track string values for matching
+                    if (typeof value === 'string') {
+                      presentValues.add(value);
+                    }
                     if (Array.isArray(value) && value.length > 0) {
                       value.forEach((item, index) => {
                         if (typeof item === 'object' && item !== null) {
                           traverse(item, `${fieldPath}[${index}]`);
                           Object.keys(item).forEach(subKey => presentFields.add(subKey));
+                        } else if (typeof item === 'string') {
+                          presentValues.add(item);
                         }
                       });
                     } else if (typeof value === 'object') {
@@ -282,14 +289,17 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
                 }
               };
               if (data) traverse(data);
-              return presentFields;
+              return { presentFields, presentValues };
             };
 
             const applyDataBasedGreying = () => {
               if (!enableDataFading) return;
               if (!exampleData) return;
               
-              const presentFields = analyzeDataPresence(exampleData);
+              const { presentFields, presentValues } = analyzeDataPresence(exampleData);
+              console.log('[DiagramViewer] Present fields:', Array.from(presentFields));
+              console.log('[DiagramViewer] Present values:', Array.from(presentValues));
+              
               const nodes = svgElement.querySelectorAll('g.node');
               const edges = svgElement.querySelectorAll('g.edge');
               
@@ -301,25 +311,39 @@ const DiagramViewer = ({ pumlContent, onNodeClick, entityName, entityVersion, en
                 const nodeId = titleEl?.textContent?.trim();
                 if (!nodeId) return;
                 
+                console.log('[DiagramViewer] Checking node:', nodeId);
+                
                 // Main node and reference data nodes are always active
                 const isMainNode = Array.from(nodes).indexOf(node) === 0;
                 const isReferenceData = nodeId === 'ReferenceDataRelationships';
                 if (isMainNode || isReferenceData) {
+                  console.log('[DiagramViewer] Node is main/reference, keeping active:', nodeId);
                   activeNodes.add(nodeId);
                   return;
                 }
                 
-                // Check for connection in data
-                const hasConnection = Array.from(presentFields).some(field => 
-                  field.includes(nodeId) && field.endsWith('ID')
-                );
+                // Check both field names and field values
+                const fieldMatch = Array.from(presentFields).some(field => field.includes(nodeId));
+                let valueMatch = Array.from(presentValues).some(value => value.includes(nodeId));
+                
+                // Special case for AnyDataset - also check for 'dataset'
+                if (!valueMatch && nodeId === 'AnyDataset') {
+                  valueMatch = Array.from(presentValues).some(value => value.toLowerCase().includes('dataset'));
+                }
+                
+                const hasConnection = fieldMatch || valueMatch;
+                
+                console.log('[DiagramViewer] Node', nodeId, 'fieldMatch:', fieldMatch, 'valueMatch:', valueMatch, 'hasConnection:', hasConnection);
                 
                 if (hasConnection) {
                   activeNodes.add(nodeId);
                 } else {
+                  console.log('[DiagramViewer] Greying out node:', nodeId);
                   node.classList.add('dv-faded');
                 }
               });
+              
+              console.log('[DiagramViewer] Active nodes:', Array.from(activeNodes));
               
               // Fade edges that don't connect two active nodes
               edges.forEach((edge) => {

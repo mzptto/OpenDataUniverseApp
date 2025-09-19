@@ -1,0 +1,225 @@
+digraph OSDU_Data_Model {
+    // Graph settings
+    rankdir=TB;
+    node [shape=box, style=filled, fontname="Arial"];
+    edge [fontname="Arial", fontsize=10];
+    
+    // Color scheme based on OSDU legend
+    subgraph cluster_legend {
+        label="OSDU Entity Types";
+        style=filled;
+        color=lightgrey;
+        
+        master_data [label="Master Data", fillcolor="#ffa080"];
+        work_product [label="Work Product Component", fillcolor="#f9d949"];
+        abstract_entity [label="Abstract Entity", fillcolor="#97ccf6"];
+        dataset [label="Dataset", fillcolor="#ddddff"];
+        reference_data [label="Reference Data", fillcolor="#79dfdf"];
+    }
+    
+    // OPERATOR DOMAIN
+    subgraph cluster_operator {
+        label="Operator Domain";
+        style=filled;
+        color="#f0f0f0";
+        
+        Organisation [fillcolor="#ffa080"];
+        Agreement [fillcolor="#ffa080"];
+        BusinessDecision [fillcolor="#ffa080"];
+        GeoPoliticalEntity [fillcolor="#ffa080"];
+    }
+    
+    // SUBSURFACE DOMAIN
+    subgraph cluster_subsurface {
+        label="Subsurface Domain";
+        style=filled;
+        color="#e6f3ff";
+        
+        // Well entities
+        Well [fillcolor="#ffa080"];
+        Wellbore [fillcolor="#ffa080"];
+        HoleSection [fillcolor="#ffa080"];
+        WellActivity [fillcolor="#ffa080"];
+        OperationsReport [fillcolor="#ffa080"];
+        Rig [fillcolor="#ffa080"];
+        RigUtilization [fillcolor="#ffa080"];
+        WellPlanningWell [fillcolor="#ffa080"];
+        WellPlanningWellbore [fillcolor="#ffa080"];
+        EvaluationPlan [fillcolor="#ffa080"];
+        GeometricTargetSet [fillcolor="#ffa080"];
+        TubularAssembly [fillcolor="#ffa080"];
+        TubularComponent [fillcolor="#ffa080"];
+        BlowoutPreventer [fillcolor="#ffa080"];
+        BlowoutPreventerComponent [fillcolor="#ffa080"];
+        IsolatedInterval [fillcolor="#ffa080"];
+        PerforationInterval [fillcolor="#ffa080"];
+        PerforationJob [fillcolor="#ffa080"];
+        WellboreOpening [fillcolor="#ffa080"];
+        WellboreArchitecture [fillcolor="#ffa080"];
+        CasingDesign [fillcolor="#ffa080"];
+        PlannedCementJob [fillcolor="#ffa080"];
+        FluidsProgram [fillcolor="#ffa080"];
+        FluidsReport [fillcolor="#ffa080"];
+        BHARun [fillcolor="#ffa080"];
+        Coring [fillcolor="#ffa080"];
+        WellLogAcquisition [fillcolor="#ffa080"];
+        WellPressureTestAcquisitionJob [fillcolor="#ffa080"];
+        WellBarrierElementTest [fillcolor="#ffa080"];
+        WellSiteStructure [fillcolor="#ffa080"];
+        WellLicense [fillcolor="#ffa080"];
+        WellboreTrajectory [fillcolor="#f9d949"];
+        DataQuality [fillcolor="#f9d949"];
+        
+        // Geology & Petrophysics
+        Basin [fillcolor="#ffa080"];
+        Field [fillcolor="#ffa080"];
+        Play [fillcolor="#ffa080"];
+        Prospect [fillcolor="#ffa080"];
+        Reservoir [fillcolor="#ffa080"];
+        ReservoirSegment [fillcolor="#ffa080"];
+        RockVolumeFeature [fillcolor="#ffa080"];
+        ModelFeature [fillcolor="#ffa080"];
+        BoundaryFeature [fillcolor="#ffa080"];
+        ReferenceLevel [fillcolor="#ffa080"];
+        
+        // Samples
+        Sample [fillcolor="#ffa080"];
+        RockSample [fillcolor="#ffa080"];
+        SampleContainer [fillcolor="#ffa080"];
+        SampleAcquisitionJob [fillcolor="#ffa080"];
+        SampleChainOfCustodyEvent [fillcolor="#ffa080"];
+        
+        // Geophysics
+        SeismicAcquisitionSurvey [fillcolor="#ffa080"];
+        SeismicProcessingProject [fillcolor="#ffa080"];
+        Seismic2DInterpretationSet [fillcolor="#ffa080"];
+        Seismic3DInterpretationSet [fillcolor="#ffa080"];
+        GravityMagneticAcquisitionSurvey [fillcolor="#ffa080"];
+        SurveyProgram [fillcolor="#ffa080"];
+    }
+    
+    // PRODUCTION DOMAIN
+    subgraph cluster_production {
+        label="Production Domain";
+        style=filled;
+        color="#e6ffe6";
+        
+        // Production entities would be defined here
+        // Based on the domain description but not detailed in the diagrams explored
+        ProductionAccounting [fillcolor="#ffa080", style=dashed];
+        ProductionOptimization [fillcolor="#ffa080", style=dashed];
+        ProductionForecast [fillcolor="#ffa080", style=dashed];
+    }
+    
+    // SURFACE FACILITIES DOMAIN
+    subgraph cluster_facilities {
+        label="Surface Facilities Domain";
+        style=filled;
+        color="#fff0e6";
+        
+        GenericFacility [fillcolor="#ffa080"];
+        GenericSite [fillcolor="#ffa080"];
+        StorageFacility [fillcolor="#ffa080"];
+        
+        // Process Equipment (dashed as not fully detailed)
+        ProcessEquipment [fillcolor="#ffa080", style=dashed];
+        FacilityOperationsMaintenance [fillcolor="#ffa080", style=dashed];
+    }
+    
+
+    
+    // CORE RELATIONSHIPS
+    
+    // Operator relationships
+    Agreement -> Organisation [label="between"];
+    
+    // Well connections (only to Field and Organisation)
+    Well -> Field [label="part of"];
+    Well -> Organisation [label="operated by"];
+    
+    // Well hierarchy
+    Well -> Wellbore [label="contains"];
+    Wellbore -> HoleSection [label="divided into"];
+    
+    // Geographic context
+    Field -> Basin [label="within"];
+    Field -> Play [label="targets"];
+    Play -> Prospect [label="contains"];
+    
+    // Subsurface relationships
+    Reservoir -> ReservoirSegment [label="divided into"];
+    Wellbore -> Sample [label="produces"];
+    Sample -> SampleContainer [label="stored in"];
+    
+    // Well operations
+    Wellbore -> WellActivity [label="subject to"];
+    WellActivity -> OperationsReport [label="documented in"];
+    Wellbore -> Rig [label="drilled by"];
+    Rig -> RigUtilization [label="utilization tracked"];
+    
+    // Well completion
+    Wellbore -> IsolatedInterval [label="completed with"];
+    Wellbore -> PerforationInterval [label="perforated"];
+    PerforationJob -> PerforationInterval [label="creates"];
+    
+    // Well planning
+    WellPlanningWell -> Well [label="plans"];
+    WellPlanningWellbore -> Wellbore [label="plans"];
+    EvaluationPlan -> GeometricTargetSet [label="defines"];
+    
+    // Equipment relationships
+    Wellbore -> TubularAssembly [label="equipped with"];
+    TubularAssembly -> TubularComponent [label="composed of"];
+    Wellbore -> BlowoutPreventer [label="protected by"];
+    BlowoutPreventer -> BlowoutPreventerComponent [label="composed of"];
+    
+    // Fluids and cementing
+    Wellbore -> FluidsProgram [label="uses"];
+    FluidsProgram -> FluidsReport [label="documented in"];
+    Wellbore -> PlannedCementJob [label="cemented by"];
+    
+    // Well architecture
+    Wellbore -> WellboreArchitecture [label="has"];
+    Wellbore -> CasingDesign [label="designed with"];
+    
+    // Logging and testing
+    Wellbore -> WellLogAcquisition [label="logged by"];
+    Wellbore -> WellPressureTestAcquisitionJob [label="tested by"];
+    Wellbore -> Coring [label="cored"];
+    Coring -> Sample [label="produces"];
+    
+    // BHA operations
+    Wellbore -> BHARun [label="drilled with"];
+    
+    // Barrier testing
+    Wellbore -> WellBarrierElementTest [label="tested for barriers"];
+    
+    // Site infrastructure
+    Well -> WellSiteStructure [label="located at"];
+    Well -> WellLicense [label="authorized by"];
+    
+    // Geophysical surveys
+    Field -> SeismicAcquisitionSurvey [label="surveyed by"];
+    SeismicAcquisitionSurvey -> SeismicProcessingProject [label="processed by"];
+    SeismicProcessingProject -> Seismic2DInterpretationSet [label="interpreted as"];
+    SeismicProcessingProject -> Seismic3DInterpretationSet [label="interpreted as"];
+    
+    // Gravity and magnetic
+    Field -> GravityMagneticAcquisitionSurvey [label="surveyed by"];
+    SurveyProgram -> SeismicAcquisitionSurvey [label="includes"];
+    
+    // Facilities
+    GenericFacility -> GenericSite [label="located at"];
+    GenericFacility -> StorageFacility [label="may include"];
+    
+    // Work products
+    Wellbore -> WellboreTrajectory [label="has trajectory"];
+    Wellbore -> DataQuality [label="quality assured"];
+    
+    // Reference relationships
+    Wellbore -> ReferenceLevel [label="measured from"];
+    
+    // Sample chain of custody
+    Sample -> SampleChainOfCustodyEvent [label="custody tracked"];
+    SampleAcquisitionJob -> Sample [label="acquires"];
+}

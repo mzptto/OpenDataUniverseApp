@@ -3,7 +3,7 @@ import { ReferenceDataManager } from '../data/ReferenceDataManager';
 import RecordInfoPanel from './RecordInfoPanel';
 
 // Reference Data Dropdown Component
-const ReferenceDataDropdown = ({ value, style }) => {
+const ReferenceDataDropdown = ({ value, displayValue, style }) => {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +44,7 @@ const ReferenceDataDropdown = ({ value, style }) => {
     return (
       <input
         type="text"
-        value={value || ''}
+        value={displayValue || value || ''}
         readOnly
         style={style}
       />
@@ -53,7 +53,7 @@ const ReferenceDataDropdown = ({ value, style }) => {
 
   return (
     <select value={value || ''} onChange={() => {}} style={style}>
-      <option value="">{value ? value : 'Select...'}</option>
+      <option value="">{displayValue || value || 'Select...'}</option>
       {options.map((option) => (
         <option key={option.id} value={option.id}>
           {option.name} ({option.code})
@@ -89,14 +89,41 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
   };
 
   const getNodeExampleData = (nodeName) => {
+    console.log('[PropertiesPanel] getNodeExampleData called with nodeName:', nodeName);
+    console.log('[PropertiesPanel] example.data keys:', example?.data ? Object.keys(example.data) : 'no data');
+    
     if (!example?.data) return null;
     
     // Search through example data for matching node
     const searchInObject = (obj, searchKey) => {
       for (const [key, value] of Object.entries(obj)) {
-        if (key === searchKey || key.includes(searchKey)) {
+        console.log('[PropertiesPanel] Checking key:', key, 'value:', value, 'against searchKey:', searchKey);
+        
+        // Check if field name contains the search key
+        const keyMatch = key === searchKey || key.includes(searchKey);
+        
+        // Check if field value contains the search key (for namespace values)
+        let valueMatch = typeof value === 'string' && value.includes(searchKey);
+        
+        // Special case for AnyDataset - also check for 'dataset'
+        if (!valueMatch && searchKey === 'AnyDataset' && typeof value === 'string') {
+          valueMatch = value.toLowerCase().includes('dataset');
+        }
+        
+        if (keyMatch || valueMatch) {
+          console.log('[PropertiesPanel] Found match! key:', key, 'value:', value);
+          
+          // For namespace values, extract clean data
+          if (typeof value === 'string' && value.includes('namespace:')) {
+            const idValue = value.split(':').pop() || value;
+            const cleanFieldName = key.replace(/ID$/, '').replace(/([A-Z])/g, ' $1').trim();
+            console.log('[PropertiesPanel] Returning cleaned namespace data:', { [cleanFieldName]: idValue });
+            return { [cleanFieldName]: idValue };
+          }
+          
           return { [key]: value };
         }
+        
         if (typeof value === 'object' && value !== null) {
           const found = searchInObject(value, searchKey);
           if (found) return found;
@@ -105,7 +132,9 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
       return null;
     };
     
-    return searchInObject(example.data, nodeName);
+    const result = searchInObject(example.data, nodeName);
+    console.log('[PropertiesPanel] Final result:', result);
+    return result;
   };
 
   const resolveSchemaProperties = (schemaData) => {
@@ -223,10 +252,36 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
     return false;
   };
 
+  // Helper function to extract clean display value from OSDU fields
+  const getCleanDisplayValue = (value) => {
+    if (typeof value !== 'string') return value;
+    
+    // Handle OSDU dataset: extract hash ID (last part after final colon)
+    if (value.includes('dataset--')) {
+      const parts = value.split(':');
+      if (parts.length >= 3) {
+        return parts[parts.length - 1] || value; // Get the hash ID (last part)
+      }
+    }
+    
+    // Handle other OSDU types: extract meaningful name (second to last part)
+    if (value.includes('reference-data--') || value.includes('master-data--') || value.includes('work-product-component--')) {
+      const parts = value.split(':');
+      if (parts.length >= 3) {
+        return parts[parts.length - 2] || value; // Get the entity name (second to last part)
+      }
+    }
+    
+    return value; // Return original value if no OSDU pattern found
+  };
+
   const renderFormField = (key, value, schemaProperty) => {
     const isReadOnly = key.toLowerCase().includes('time') || key.toLowerCase().includes('user') || ['id', 'kind', 'version'].includes(key);
     const fieldType = schemaProperty?.type || 'string';
     const borderColor = getDataTypeColor(key, schemaProperty, value);
+    
+    // Get clean display value
+    const displayValue = getCleanDisplayValue(value);
     
     const baseStyle = {
       width: '100%',
@@ -248,7 +303,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
       return (
         <input
           type="text"
-          value={value || ''}
+          value={displayValue || ''}
           disabled
           style={{
             ...baseStyle,
@@ -261,7 +316,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
     if (fieldType === 'boolean') {
       return (
         <select
-          value={value?.toString() || 'false'}
+          value={displayValue?.toString() || 'false'}
           disabled
           style={baseStyle}
         >
@@ -275,17 +330,18 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
       return (
         <input
           type="number"
-          value={value || ''}
+          value={displayValue || ''}
           readOnly
           style={baseStyle}
         />
       );
     }
     
-    // Render reference data dropdown
+    // Render reference data dropdown (still use original value for dropdown logic)
     if (isReferenceDataField) {
       return <ReferenceDataDropdown 
         value={value} 
+        displayValue={displayValue}
         style={baseStyle} 
       />;
     }
@@ -293,7 +349,7 @@ const PropertiesPanel = ({ schema, example, selectedNode }) => {
     return (
       <input
         type="text"
-        value={value || ''}
+        value={displayValue || ''}
         readOnly
         style={baseStyle}
       />
