@@ -244,11 +244,7 @@ function App() {
     setSearchState({ results: null, loading: true });
     
     try {
-      // Use local proxy for development, deployed API for production
-      const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
-      
-      const response = await fetch(`${apiUrl}/api/search`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/search`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(searchBody)
@@ -272,11 +268,7 @@ function App() {
 
   const handleRecordSelect = useCallback(async (record) => {
     try {
-      // Use local proxy for development, deployed API for production
-      const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
-      
-      const response = await fetch(`${apiUrl}/api/storage/${encodeURIComponent(record.id)}`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/storage/${encodeURIComponent(record.id)}`);
       const fullRecord = await response.json();
       
       // Extract entity info from kind
