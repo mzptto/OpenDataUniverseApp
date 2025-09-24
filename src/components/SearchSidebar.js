@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Send, Key } from 'lucide-react';
+import { ApiService } from '../services/ApiService';
 
 const SearchSidebar = ({ entities = [], onSearch }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,29 +81,16 @@ const SearchSidebar = ({ entities = [], onSearch }) => {
     
     setTokenRefreshing(true);
     try {
-      // Use local proxy for development, deployed API for production
-      const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
-      const url = `${apiUrl}/api/refresh-token/`;
+      // Clean the token (remove Bearer prefix if present)
+      const cleanToken = newToken.trim().replace(/^Bearer\s+/i, '');
       
-      console.log('Making POST request to:', url);
+      // Use centralized ApiService
+      await ApiService.refreshToken(cleanToken);
       
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ token: newToken.trim().replace(/^Bearer\s+/i, '') })
-      });
-      
-      if (response.ok) {
-        setNewToken('');
-        alert('Token updated successfully!');
-      } else {
-        alert('Failed to update token');
-      }
+      setNewToken('');
+      alert('Token updated successfully!');
     } catch (error) {
+      console.error('Token refresh error:', error);
       alert(`Error: ${error.message}`);
     } finally {
       setTokenRefreshing(false);

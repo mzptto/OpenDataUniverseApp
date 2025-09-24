@@ -72,6 +72,17 @@ function App() {
     setAuthState(newAuthState);
   }, []);
 
+  const handleSearchWithViewSwitch = useCallback(async (searchBody) => {
+    // Switch to search view when search is executed
+    setAppState(prev => ({
+      ...prev,
+      mainContentView: 'search'
+    }));
+    
+    // Execute the actual search
+    await handleSearch(searchBody);
+  }, [handleSearch, setAppState]);
+
   const handleRecordSelectWithState = useCallback(async (record) => {
     await handleRecordSelect(record, entities, (entity, liveDataMode, mainContentView) => {
       setAppState(prev => ({
@@ -117,7 +128,7 @@ function App() {
           selectedEntity={appState.selectedEntity}
           onEntitySelect={handleEntitySelect}
           onFileSelect={handleFileSelect}
-          onSearch={handleSearch}
+          onSearch={handleSearchWithViewSwitch}
           onClose={() => setAppState(prev => ({ ...prev, activeSidebarView: null }))}
           onAuthStateChange={handleAuthStateChange}
         />
