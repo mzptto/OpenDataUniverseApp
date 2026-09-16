@@ -1,5 +1,18 @@
 // Utility functions to load and process OSDU data files
 
+export const extractEntityNameFromKind = (data, fileName) => {
+  if (data?.kind && typeof data.kind === 'string') {
+    const kindMatch = data.kind.match(/^[\w\-\.]+:[\w\-\.]+:([\w\-\.]+):[0-9]+\.[0-9]+\.[0-9]+$/);
+    if (kindMatch) {
+      const cleanEntity = kindMatch[1].replace(/^(master-data--|work-product-component--|reference-data--)/, '');
+      const versionMatch = data.kind.match(/:([0-9]+\.[0-9]+\.[0-9]+)$/);
+      const version = versionMatch ? versionMatch[1] : '';
+      return version ? `${cleanEntity}.${version}` : cleanEntity;
+    }
+  }
+  return fileName.replace('.json', '').split('.')[0];
+};
+
 /**
  * Load and parse OSDU entity data from the file system
  * This would be used to integrate with your actual OSDU data folders

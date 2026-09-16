@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Building2, Database, BarChart3, FileText, BarChart, ChevronUp, ChevronDown, Eye, Code, Table, Files, MapPin, Factory, Scroll, FileSpreadsheet, FolderOpen, FileJson, Repeat } from 'lucide-react';
+import { API_BASE_URL } from '../config/apiConfig';
 
 const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
   const [sortField, setSortField] = useState(null);
@@ -7,6 +8,7 @@ const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
   const [viewMode, setViewMode] = useState('table');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [columnWidths, setColumnWidths] = useState({ name: 250, id: 150, type: 180, details: 200 });
+  const [downloadError, setDownloadError] = useState(null);
 
 
   const getEntityDisplayInfo = (record) => {
@@ -133,20 +135,15 @@ const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
   };
 
   const downloadRecord = async (recordId) => {
+    setDownloadError(null);
     try {
-      // Use local proxy for development, deployed API for production
-      const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
-      const storageEndpoint = `${apiUrl}/api/storage/${encodeURIComponent(recordId)}/`;
-      
-      const result = await fetch(storageEndpoint, {
+      const result = await fetch(`${API_BASE_URL}/api/storage/${encodeURIComponent(recordId)}/`, {
         method: 'GET',
         headers: { 'content-type': 'application/json' }
       });
-      
+
       if (result.ok) {
         const recordData = await result.json();
-        
         const blob = new Blob([JSON.stringify(recordData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -157,10 +154,10 @@ const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else {
-        alert(`Failed to download record: ${result.status} ${result.statusText}`);
+        setDownloadError(`Failed to download record: ${result.status} ${result.statusText}`);
       }
     } catch (error) {
-      alert(`Error downloading record: ${error.message}`);
+      setDownloadError(`Error downloading record: ${error.message}`);
     }
   };
 
