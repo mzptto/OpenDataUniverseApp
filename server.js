@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
@@ -82,4 +84,7 @@ app.post('/api/refresh-token', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 OSDU Proxy Server running on http://localhost:${PORT}`);
   console.log(`📡 Proxying requests to OSDU demo-stage environment`);
+  if (!OSDU_TOKEN) {
+    console.warn('⚠️  OSDU_TOKEN is not set — requests will be rejected until a token is supplied.');
+  }
 });

@@ -2,7 +2,7 @@
 
 export const extractEntityNameFromKind = (data, fileName) => {
   if (data?.kind && typeof data.kind === 'string') {
-    const kindMatch = data.kind.match(/^[\w\-\.]+:[\w\-\.]+:([\w\-\.]+):[0-9]+\.[0-9]+\.[0-9]+$/);
+    const kindMatch = data.kind.match(/^[\w\-.]+:[\w\-.]+:([\w\-.]+):[0-9]+\.[0-9]+\.[0-9]+$/);
     if (kindMatch) {
       const cleanEntity = kindMatch[1].replace(/^(master-data--|work-product-component--|reference-data--)/, '');
       const versionMatch = data.kind.match(/:([0-9]+\.[0-9]+\.[0-9]+)$/);
