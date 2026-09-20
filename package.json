@@ -8,6 +8,7 @@
     "aws-amplify": "^6.15.5",
     "concurrently": "^7.6.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^4.21.2",
     "lucide-react": "^0.263.1",
     "node-fetch": "^2.6.7",

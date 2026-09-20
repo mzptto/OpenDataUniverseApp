@@ -132,38 +132,6 @@ const SearchResults = ({ searchResponse, loading, onRecordSelect }) => {
     setColumnWidths(prev => ({ ...prev, [column]: Math.max(100, newWidth) }));
   };
 
-  const downloadRecord = async (recordId) => {
-    try {
-      // Use local proxy for development, deployed API for production
-      const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
-      const storageEndpoint = `${apiUrl}/api/storage/${encodeURIComponent(recordId)}/`;
-      
-      const result = await fetch(storageEndpoint, {
-        method: 'GET',
-        headers: { 'content-type': 'application/json' }
-      });
-      
-      if (result.ok) {
-        const recordData = await result.json();
-        
-        const blob = new Blob([JSON.stringify(recordData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${recordId.split(':').pop()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } else {
-        alert(`Failed to download record: ${result.status} ${result.statusText}`);
-      }
-    } catch (error) {
-      alert(`Error downloading record: ${error.message}`);
-    }
-  };
-
   if (loading) {
     return (
       <div style={{ 

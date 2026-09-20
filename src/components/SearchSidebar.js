@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Send, Key } from 'lucide-react';
+import { API_BASE_URL } from '../config/apiConfig';
 
 const SearchSidebar = ({ entities = [], onSearch }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -8,6 +9,7 @@ const SearchSidebar = ({ entities = [], onSearch }) => {
   const [newToken, setNewToken] = useState('');
   const [tokenRefreshing, setTokenRefreshing] = useState(false);
   const [showTokenSection, setShowTokenSection] = useState(false);
+  const [tokenMessage, setTokenMessage] = useState(null);
 
   // Generate entity types from entities (same as EntityBrowser)
   const entityTypes = React.useMemo(() => {
@@ -71,39 +73,33 @@ const SearchSidebar = ({ entities = [], onSearch }) => {
   };
 
   const refreshToken = async (e) => {
-    e?.preventDefault(); // Prevent any form submission
-    
+    e?.preventDefault();
+
     if (!newToken.trim()) {
-      alert('Please enter a token');
+      setTokenMessage({ type: 'error', text: 'Please enter a token' });
       return;
     }
-    
+
     setTokenRefreshing(true);
+    setTokenMessage(null);
     try {
-      // Use local proxy for development, deployed API for production
-      const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
-      const url = `${apiUrl}/api/refresh-token/`;
-      
-      console.log('Making POST request to:', url);
-      
-      const response = await fetch(url, {
+      const response = await fetch(`${API_BASE_URL}/api/refresh-token`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify({ token: newToken.trim().replace(/^Bearer\s+/i, '') })
       });
-      
+
       if (response.ok) {
         setNewToken('');
-        alert('Token updated successfully!');
+        setTokenMessage({ type: 'success', text: 'Token updated successfully' });
       } else {
-        alert('Failed to update token');
+        setTokenMessage({ type: 'error', text: 'Failed to update token' });
       }
     } catch (error) {
-      alert(`Error: ${error.message}`);
+      setTokenMessage({ type: 'error', text: error.message });
     } finally {
       setTokenRefreshing(false);
     }
@@ -245,6 +241,18 @@ const SearchSidebar = ({ entities = [], onSearch }) => {
               >
                 {tokenRefreshing ? 'Updating...' : 'Update Token'}
               </button>
+              {tokenMessage && (
+                <div style={{
+                  marginTop: '0.5rem',
+                  padding: '0.4rem 0.5rem',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  background: tokenMessage.type === 'success' ? '#d4edda' : '#f8d7da',
+                  color: tokenMessage.type === 'success' ? '#155724' : '#721c24'
+                }}>
+                  {tokenMessage.text}
+                </div>
+              )}
             </div>
           )}
         </div>

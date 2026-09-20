@@ -10,8 +10,41 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ServerlessEDI from './components/ServerlessEDI';
 import OSDUHierarchyViewer from './components/OSDUHierarchyViewer';
 import { DataLoader } from './utils/dataLoader';
+import { extractEntityNameFromKind } from './utils/osduDataLoader';
 import { sampleEntities } from './data/sampleData';
-// AWS config removed - using simple auth
+import { API_BASE_URL } from './config/apiConfig';
+
+const ResizeHandle = () => {
+  const handleMouseDown = (e) => {
+    const startY = e.clientY;
+    const diagramContainer = document.querySelector('.diagram-container');
+    const propertiesPanel = document.querySelector('.properties-panel');
+    const startDiagramHeight = diagramContainer.offsetHeight;
+    const startPropertiesHeight = propertiesPanel.offsetHeight;
+
+    const handleMouseMove = (ev) => {
+      const deltaY = ev.clientY - startY;
+      const newDiagramHeight = startDiagramHeight + deltaY;
+      const newPropertiesHeight = startPropertiesHeight - deltaY;
+
+      if (newDiagramHeight > 200 && newPropertiesHeight > 200) {
+        diagramContainer.style.flex = 'none';
+        diagramContainer.style.height = newDiagramHeight + 'px';
+        propertiesPanel.style.height = newPropertiesHeight + 'px';
+      }
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  return <div className="resize-handle" onMouseDown={handleMouseDown} />;
+};
 
 function App() {
   const [entities, setEntities] = useState(sampleEntities);
@@ -73,83 +106,36 @@ function App() {
     }));
   }, []);
 
-  const extractEntityNameFromKind = (data, fileName) => {
-    // Try to extract from kind field first
-    if (data.kind && typeof data.kind === 'string') {
-      const kindMatch = data.kind.match(/^[\w\-\.]+:[\w\-\.]+:([\w\-\.]+):[0-9]+\.[0-9]+\.[0-9]+$/);
-      if (kindMatch) {
-        const entityPart = kindMatch[1];
-        // Remove master-data-- or work-product-component-- prefixes
-        const cleanEntity = entityPart.replace(/^(master-data--|work-product-component--|reference-data--)/, '');
-        // Get version from kind
-        const versionMatch = data.kind.match(/:([0-9]+\.[0-9]+\.[0-9]+)$/);
-        const version = versionMatch ? versionMatch[1] : '';
-        return version ? `${cleanEntity}.${version}` : cleanEntity;
-      }
-    }
-    
-    // Fallback to filename
-    return fileName.replace('.json', '').split('.')[0];
-  };
-
   const handleFileSelect = async (fileData) => {
-
     let matchingEntity = null;
-    
-    // Only auto-select entity for schema files (not data records)
+
     const isSchemaFile = fileData.schema?.$schema || fileData.schema?.properties || fileData.name.toLowerCase().includes('schema');
-    
+
     if (isSchemaFile) {
-      // Extract entity name from schema title or filename
-      const schemaTitle = fileData.schema?.title;
-      const fileName = fileData.name;
-
-      console.log('Schema file detected. Title:', schemaTitle, 'Filename:', fileName);
-      console.log('Available entities (sample):', entities.slice(0,5).map(e => `${e.name}.${e.version}`), '... total', entities.length);
-
-      // Try to match by schema title first, then filename
-      const searchName = schemaTitle || fileName;
-
-      matchingEntity = entities.find(entity => {
-        const match = entity.name.toLowerCase() === searchName.toLowerCase() ||
-                     entity.name.toLowerCase().includes(searchName.toLowerCase()) ||
-                     searchName.toLowerCase().includes(entity.name.toLowerCase());
-        console.log(`Checking ${entity.name} vs ${searchName}: ${match}`);
-        return match;
-      });
-
-      console.log('Found matching entity (schema route):', matchingEntity?.name, matchingEntity?.version, 'puml?', !!matchingEntity?.pumlContent);
+      const searchName = fileData.schema?.title || fileData.name;
+      matchingEntity = entities.find(entity =>
+        entity.name.toLowerCase() === searchName.toLowerCase() ||
+        entity.name.toLowerCase().includes(searchName.toLowerCase()) ||
+        searchName.toLowerCase().includes(entity.name.toLowerCase())
+      );
     } else {
-      // For data records, match EXACT by kind base + version
       const kind = fileData.schema?.kind;
       const kindMatch = typeof kind === 'string'
         ? kind.match(/^[\w\-.]+:[\w\-.]+:([\w\-.]+):([0-9]+\.[0-9]+\.[0-9]+)$/)
         : null;
       if (kindMatch) {
-        const entityPart = kindMatch[1];
+        const base = kindMatch[1].replace(/^(master-data--|work-product-component--|reference-data--)/, '').toLowerCase();
         const version = kindMatch[2];
-        const base = entityPart.replace(/^(master-data--|work-product-component--|reference-data--)/, '').toLowerCase();
-        console.log('Live data record detected. Parsed kind:', { base, version });
-
-        // First, search in currently loaded chunk
         matchingEntity = entities.find(e => e.name.toLowerCase() === base && e.version === version);
-        console.log('Match in current chunk:', !!matchingEntity);
-
-        // If not found in current chunk, skip full dataset search for now
-        if (!matchingEntity) {
-          console.log('Entity not found in current chunk, skipping full dataset search');
-        }
       }
     }
-    
-    // Extract proper entity name for display
+
     const extractedEntityName = extractEntityNameFromKind(fileData.schema, fileData.name);
-    
-    // Use the matching entity from osduEntities with loaded data
+
     const entityToUse = matchingEntity ? {
-      ...matchingEntity, // Keep schema, pumlContent, etc. from osduEntities
-      example: fileData.schema, // Replace example with loaded data
-      fileName: fileData.name // Add filename
+      ...matchingEntity,
+      example: fileData.schema,
+      fileName: fileData.name
     } : {
       name: extractedEntityName,
       schema: null,
@@ -158,51 +144,12 @@ function App() {
       fileName: fileData.name
     };
 
-    console.log('Selected entity set to:', {
-      name: entityToUse.name,
-      version: entityToUse.version,
-      hasPUML: !!entityToUse.pumlContent,
-      exampleKeys: Object.keys(fileData.schema || {})
-    });
-
     setAppState(prev => ({
       ...prev,
       selectedEntity: entityToUse,
       selectedNode: null,
       liveDataMode: true
     }));
-  };
-
-  const ResizeHandle = () => {
-    const handleMouseDown = (e) => {
-      const startY = e.clientY;
-      const diagramContainer = document.querySelector('.diagram-container');
-      const propertiesPanel = document.querySelector('.properties-panel');
-      const startDiagramHeight = diagramContainer.offsetHeight;
-      const startPropertiesHeight = propertiesPanel.offsetHeight;
-      
-      const handleMouseMove = (e) => {
-        const deltaY = e.clientY - startY;
-        const newDiagramHeight = startDiagramHeight + deltaY;
-        const newPropertiesHeight = startPropertiesHeight - deltaY;
-        
-        if (newDiagramHeight > 200 && newPropertiesHeight > 200) {
-          diagramContainer.style.flex = 'none';
-          diagramContainer.style.height = newDiagramHeight + 'px';
-          propertiesPanel.style.height = newPropertiesHeight + 'px';
-        }
-      };
-      
-      const handleMouseUp = () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-      
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    };
-    
-    return <div className="resize-handle" onMouseDown={handleMouseDown} />;
   };
 
   const handleNodeClick = useCallback((nodeName) => {
@@ -242,13 +189,9 @@ function App() {
 
   const handleSearch = useCallback(async (searchBody) => {
     setSearchState({ results: null, loading: true });
-    
+
     try {
-      // Use local proxy for development, deployed API for production
-      const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
-      
-      const response = await fetch(`${apiUrl}/api/search`, {
+      const response = await fetch(`${API_BASE_URL}/api/search`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(searchBody)
@@ -272,11 +215,7 @@ function App() {
 
   const handleRecordSelect = useCallback(async (record) => {
     try {
-      // Use local proxy for development, deployed API for production
-      const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment ? 'http://localhost:3001' : process.env.REACT_APP_API_URL;
-      
-      const response = await fetch(`${apiUrl}/api/storage/${encodeURIComponent(record.id)}`);
+      const response = await fetch(`${API_BASE_URL}/api/storage/${encodeURIComponent(record.id)}`);
       const fullRecord = await response.json();
       
       // Extract entity info from kind
